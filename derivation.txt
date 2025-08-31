@@ -5,10 +5,48 @@ classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
 InheritanceOpt -> ε
 MemberList -> visibility memberDecl MemberList
 visibility -> public
+memberDecl -> funcDecl
+funcDecl -> funcHead ;
+funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
+fParams -> ε
+returnType -> void
+MemberList -> ε
+classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList
+classOrImplOrFunc -> classDecl
+classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
+InheritanceOpt -> ε
+MemberList -> visibility memberDecl MemberList
+visibility -> private
 memberDecl -> attributeDecl
 attributeDecl -> 'attribute' varDecl
 varDecl -> 'id' ':' type arraySizeList ';'
 type -> integer
 arraySizeList -> ε
 MemberList -> ε
+classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList
+classOrImplOrFunc -> funcDef
+funcDef -> funcHead funcBody
+funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
+fParams -> ε
+returnType -> void
+funcBody -> '{' varDeclOrStmtList '}'
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → localVarDecl
+localVarDecl -> 'local' varDecl
+varDecl -> 'id' ':' type arraySizeList ';'
+type -> integer
+arraySizeList -> ε
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → statement
+statement -> assignStat ';'
+assignStat -> variable assignOp expr
+variable -> idnestList 'id' indiceList
+idnestList -> ε
+indiceList -> ε
+expr -> arithExpr
+arithExpr -> term arithExpr_
+term -> factor term_
+factor -> 'id'
+arithExpr_ -> ε
+varDeclOrStmtList -> ε
 classOrImplOrFuncList -> ε

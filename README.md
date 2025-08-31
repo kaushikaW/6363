@@ -1,0 +1,20 @@
+## supported syntax
+
+```
+class MyClass {
+public func testFunc() => void;
+};
+```
+
+```
+class Data {
+private attribute value : integer;
+};
+```
+
+```
+func testFunc() => void {
+local x : integer;
+x := x;
+}
+```
