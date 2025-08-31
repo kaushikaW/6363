@@ -1,0 +1,71 @@
+// Test 18: Comprehensive Integration Test
+class Shape {
+    protected attribute area : float;
+    
+    public constructor() {
+        self.area := 0.0;
+    }
+    
+    public func calculateArea() => float {
+        return (self.area);
+    }
+};
+
+class Rectangle isa Shape {
+    private attribute width : float;
+    private attribute height : float;
+    
+    public constructor(w : float, h : float) {
+        self.width := w;
+        self.height := h;
+        self.area := w * h;
+    }
+    
+    public func resize(newWidth : float, newHeight : float) => void {
+        self.width := newWidth;
+        self.height := newHeight;
+        self.area := self.width * self.height;
+    }
+};
+
+implement Drawable {
+    func draw() => void {
+        write(self.calculateArea());
+    }
+    
+    func isVisible() => integer {
+        return (1);
+    }
+}
+
+func testShapes() => void {
+    local rect : Rectangle;
+    local shapes : Shape[10];
+    local i : integer;
+    
+    i := 0;
+    while (i < 10) {
+        shapes[i] := Rectangle(i * 2.0, i * 3.0);
+        
+        if (shapes[i].calculateArea() > 50.0) then {
+            write(shapes[i].calculateArea());
+        } else {
+            shapes[i].resize(10.0, 10.0);
+        };
+        
+        i := i + 1;
+    };
+}
+
+func main() => void {
+    testShapes();
+    
+    local input : integer;
+    read(input);
+    
+    if (input >= 0) then {
+        write(input * input);
+    } else {
+        write(-input);
+    };
+}

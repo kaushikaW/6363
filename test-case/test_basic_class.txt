@@ -1,0 +1,7 @@
+// Test 1: Basic Class Declaration
+class MyClass {
+    public attribute x : integer;
+    private func getValue() => integer {
+        return (42);
+    }
+};

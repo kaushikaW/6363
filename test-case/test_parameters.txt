@@ -1,0 +1,29 @@
+// Test 16: Parameter Edge Cases
+class ParamTest {
+    public func noParams() => void {
+    }
+    
+    public func oneParam(x : integer) => void {
+    }
+    
+    public func multipleParams(a : integer, b : float[], c : CustomType[5][10]) => integer {
+        return (a);
+    }
+    
+    public constructor() {
+    }
+    
+    public constructor(value : integer) {
+        local temp : integer;
+        temp := value;
+    }
+};
+
+func callTest() => void {
+    local obj : ParamTest;
+    local result : integer;
+    
+    obj.noParams();
+    obj.oneParam(42);
+    result := obj.multipleParams(1, 2.5, someArray);
+}

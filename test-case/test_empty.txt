@@ -1,0 +1,2 @@
+// Test 20: Empty Program
+// Empty file - should be valid according to grammar (ε production)

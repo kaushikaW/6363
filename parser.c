@@ -1,0 +1,547 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "token.h"
+
+extern Token *yylex();
+
+Token *lookahead; // current token
+FILE *derivation; // output file for derivation
+
+// Forward declarations
+void prog();
+
+void classOrImplOrFuncList();
+
+void classOrImplOrFunc();
+
+void classDecl();
+
+void InheritanceOpt();
+
+void MemberList();
+
+void visibility();
+
+void memberDecl();
+
+void attributeDecl();
+
+void funcDecl();
+
+void funcHead();
+
+void fParams();
+
+void fParamsTailList();
+
+void fParamsTail();
+
+void returnType();
+
+void arraySizeList();
+
+void varDecl();
+
+void type();
+
+void funcDef();
+
+void funcBody();
+
+void varDeclOrStmtList();
+
+void varDeclOrStmt();
+
+void localVarDecl();
+
+void statement();
+
+void assignStat();
+
+void variable();
+
+void idnestList();
+
+void idnest();
+
+void idOrSelf();
+
+void indiceList();
+
+void indice();
+
+void expr();
+
+void arithExpr();
+
+void arithExpr_();
+
+void term();
+
+void factor();
+
+void addOp();
+
+
+static void nextToken() {
+    if (lookahead) {
+        free(lookahead->tokenType);
+        free(lookahead->lexeme);
+        free(lookahead);
+    }
+
+    lookahead = yylex();
+    if (lookahead) {
+        printf("TOKEN: %-15s Lexeme: %-10s\n", lookahead->tokenType, lookahead->lexeme);
+    }
+}
+
+
+static void syntax_error(const char *expected) {
+    if (lookahead) {
+        fprintf(stderr, "Syntax error: expected %s but found %s (lexeme '%s') at line %d, col %d\n",
+                expected, lookahead->tokenType, lookahead->lexeme, lookahead->line, lookahead->column);
+    } else {
+        fprintf(stderr, "Syntax error: expected %s but found EOF\n", expected);
+    }
+    exit(1);
+}
+
+static void match(const char *expectedType) {
+    if (lookahead && strcmp(lookahead->tokenType, expectedType) == 0) {
+        nextToken();
+    } else {
+        syntax_error(expectedType);
+    }
+}
+
+// Grammar rules
+
+void prog() {
+    fprintf(derivation, "prog -> classOrImplOrFuncList\n");
+    classOrImplOrFuncList();
+}
+
+void classOrImplOrFuncList() {
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "CLASS") == 0 ||
+         strcmp(lookahead->tokenType, "IMPLEMENT") == 0 ||
+         strcmp(lookahead->tokenType, "FUNC") == 0)) {
+        fprintf(derivation, "classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList\n");
+        classOrImplOrFunc();
+        classOrImplOrFuncList();
+    } else {
+        fprintf(derivation, "classOrImplOrFuncList -> ε\n");
+    }
+}
+
+
+void classOrImplOrFunc() {
+    if (lookahead == NULL) {
+        syntax_error("classOrImplOrFunc (classDecl, implDef, or funcDef)");
+        return;
+    }
+
+    if (strcmp(lookahead->tokenType, "CLASS") == 0) {
+        fprintf(derivation, "classOrImplOrFunc -> classDecl\n");
+        classDecl();
+    } else if (strcmp(lookahead->tokenType, "IMPLEMENT") == 0) {
+        fprintf(derivation, "classOrImplOrFunc -> implDef\n");
+    } else if (strcmp(lookahead->tokenType, "FUNC") == 0 ||
+               strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0) {
+        fprintf(derivation, "classOrImplOrFunc -> funcDef\n");
+        funcDef();
+    } else {
+        syntax_error("classOrImplOrFunc (expected class, implement, or function)");
+    }
+}
+
+
+void classDecl() {
+    fprintf(derivation, "classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'\n");
+    match("CLASS");
+    match("VARIABLE");
+    InheritanceOpt();
+    match("LBRACE");
+    MemberList();
+    match("RBRACE");
+    match("SEMICOLON");
+}
+
+void InheritanceOpt() {
+    fprintf(derivation, "InheritanceOpt -> ε\n");
+}
+
+void MemberList() {
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "PUBLIC") == 0 ||
+         strcmp(lookahead->tokenType, "PRIVATE") == 0)) {
+        fprintf(derivation, "MemberList -> visibility memberDecl MemberList\n");
+
+        visibility();
+        memberDecl();
+        MemberList();
+    } else {
+        fprintf(derivation, "MemberList -> ε\n");
+    }
+}
+
+void visibility() {
+    if (lookahead && strcmp(lookahead->tokenType, "PUBLIC") == 0) {
+        match("PUBLIC");
+        fprintf(derivation, "visibility -> public\n");
+    } else if (lookahead && strcmp(lookahead->tokenType, "PRIVATE") == 0) {
+        match("PRIVATE");
+        fprintf(derivation, "visibility -> private\n");
+    } else {
+        syntax_error("visibility ('public' or 'private')");
+    }
+}
+
+void memberDecl() {
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "FUNC") == 0 ||
+         strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
+        fprintf(derivation, "memberDecl -> funcDecl\n");
+        funcDecl();
+    } else if (lookahead && strcmp(lookahead->tokenType, "ATTRIBUTE") == 0) {
+        fprintf(derivation, "memberDecl -> attributeDecl\n");
+        attributeDecl();
+    } else {
+        syntax_error("memberDecl (funcDecl or attributeDecl)");
+    }
+}
+
+void funcDecl() {
+    fprintf(derivation, "funcDecl -> funcHead ;\n");
+    funcHead();
+    match("SEMICOLON");
+}
+
+/* attributeDecl → 'attribute' varDecl */
+void attributeDecl() {
+    fprintf(derivation, "attributeDecl -> 'attribute' varDecl\n");
+    match("ATTRIBUTE");
+    varDecl();
+}
+
+/* varDecl → 'id' ':' type arraySizeList ';' */
+void varDecl() {
+    fprintf(derivation, "varDecl -> 'id' ':' type arraySizeList ';'\n");
+
+    match("VARIABLE");
+    match("COLON");
+    type();
+    arraySizeList(); // TODO
+    match("SEMICOLON");
+}
+
+/* funcDef → funcHead funcBody */
+void funcDef() {
+    fprintf(derivation, "funcDef -> funcHead funcBody\n");
+    funcHead();
+    funcBody();
+}
+
+/* funcBody -> '{' varDeclOrStmtList '}' */
+void funcBody() {
+    fprintf(derivation, "funcBody -> '{' varDeclOrStmtList '}'\n");
+    match("LBRACE");
+    varDeclOrStmtList();
+    match("RBRACE");
+}
+
+/* varDeclOrStmtList → varDeclOrStmt varDeclOrStmtList  | ε */
+void varDeclOrStmtList() {
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "LOCAL") == 0 ||
+         strcmp(lookahead->tokenType, "VARIABLE") == 0 ||
+         strcmp(lookahead->tokenType, "IF") == 0 ||
+         strcmp(lookahead->tokenType, "WHILE") == 0 ||
+         strcmp(lookahead->tokenType, "READ") == 0 ||
+         strcmp(lookahead->tokenType, "WRITE") == 0 ||
+         strcmp(lookahead->tokenType, "RETURN") == 0 ||
+         strcmp(lookahead->tokenType, "FUNC") == 0 || // function call start
+         strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
+        fprintf(derivation, "varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList\n");
+        varDeclOrStmt();
+        varDeclOrStmtList();
+    } else {
+        fprintf(derivation, "varDeclOrStmtList -> ε\n"); // empty body
+    }
+}
+
+/* varDeclOrStmt → localVarDecl | statement */
+void varDeclOrStmt() {
+    if (lookahead && strcmp(lookahead->tokenType, "LOCAL") == 0) {
+        fprintf(derivation, "varDeclOrStmt → localVarDecl\n");
+        localVarDecl();
+    } else {
+        fprintf(derivation, "varDeclOrStmt → statement\n");
+        statement(); // TODO
+    }
+}
+
+/* localVarDecl → 'local' varDecl */
+void localVarDecl() {
+    fprintf(derivation, "localVarDecl -> 'local' varDecl\n");
+    match("LOCAL");
+    varDecl();
+}
+
+/* arraySizeList → (not fully implemented yet) */
+void arraySizeList() {
+    fprintf(derivation, "arraySizeList -> ε\n");
+}
+
+void type() {
+    if (lookahead) {
+        if (strcmp(lookahead->tokenType, "INTEGER_TYPE") == 0) {
+            fprintf(derivation, "type -> integer\n");
+            match("INTEGER_TYPE");
+        } else if (strcmp(lookahead->tokenType, "FLOAT_TYPE") == 0) {
+            fprintf(derivation, "type -> float\n");
+            match("FLOAT_TYPE");
+        } else if (strcmp(lookahead->tokenType, "VARIABLE") == 0) {
+            fprintf(derivation, "type -> id\n");
+            match("VARIABLE"); // user-defined type name
+        } else {
+            syntax_error("type (integer, float, or id)");
+        }
+    } else {
+        syntax_error("type (integer, float, or id)");
+    }
+}
+
+/* funcHead → 'func' 'id' '(' fParams ')' => returnType | 'constructor' '(' fParams ') */
+void funcHead() {
+    if (lookahead && strcmp(lookahead->tokenType, "FUNC") == 0) {
+        fprintf(derivation, "funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType\n");
+
+        match("FUNC");
+        match("VARIABLE");
+        match("LPAREN");
+        fParams();
+        match("RPAREN");
+        match("ARROW");
+        returnType();
+    } else if (lookahead && strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0) {
+        fprintf(derivation, "funcHead -> 'constructor' '(' fParams ')'\n");
+
+        match("CONSTRUCTOR");
+        match("LPAREN");
+        fParams();
+        match("RPAREN");
+    } else {
+        syntax_error("funcHead (func|constructor)");
+    }
+}
+
+
+/* fParams → 'id' ':' type arraySizeList fParamsTailList | ε */
+void fParams() {
+    if (lookahead && strcmp(lookahead->tokenType, "VARIABLE") == 0) {
+        fprintf(derivation, "fParams -> 'id' ':' type arraySizeList fParamsTailList\n");
+        match("VARIABLE");
+        match("COLON");
+        type();
+        arraySizeList(); // TODO
+        fParamsTailList();
+    } else {
+        fprintf(derivation, "fParams -> ε\n");
+    }
+}
+
+/* fParamsTailList → fParamsTail fParamsTailList | ε */
+void fParamsTailList() {
+    if (lookahead && strcmp(lookahead->tokenType, "COMMA") == 0) {
+        fprintf(derivation, "fParamsTailList -> fParamsTail fParamsTailList\n");
+        fParamsTail();
+        fParamsTailList();
+    } else {
+        fprintf(derivation, "fParamsTailList -> ε\n");
+    }
+}
+
+/* fParamsTail → ',' 'id' ':' type arraySizeList */
+void fParamsTail() {
+    fprintf(derivation, "fParamsTail -> ',' 'id' ':' type arraySizeList\n");
+    match("COMMA");
+    match("VARIABLE");
+    match("COLON");
+    type();
+    arraySizeList(); // TODO
+}
+
+void returnType() {
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "INTEGER_TYPE") == 0 ||
+         strcmp(lookahead->tokenType, "FLOAT_TYPE") == 0 ||
+         strcmp(lookahead->tokenType, "VARIABLE") == 0)) {
+        fprintf(derivation, "returnType -> type\n");
+        match(lookahead->tokenType);
+    } else if (lookahead && strcmp(lookahead->tokenType, "VOID") == 0) {
+        fprintf(derivation, "returnType -> void\n");
+        match("VOID");
+    } else {
+        syntax_error("returnType (type|void)");
+    }
+}
+
+// statement → assignStat ';'
+void statement() {
+    fprintf(derivation, "statement -> assignStat ';'\n");
+    assignStat();
+    match("SEMICOLON");
+}
+
+// assignStat → variable assignOp expr
+void assignStat() {
+    fprintf(derivation, "assignStat -> variable assignOp expr\n");
+    variable();
+    match("ASSIGN");
+    expr();
+}
+
+// variable → idnestList 'id' indiceList
+void variable() {
+    fprintf(derivation, "variable -> idnestList 'id' indiceList\n");
+    idnestList();
+    match("VARIABLE");
+    indiceList();
+}
+
+
+// idnestList → idnest idnestList | ε
+void idnestList() {
+    if (lookahead && (strcmp(lookahead->tokenType, "SELF") == 0)) {
+        fprintf(derivation, "idnestList -> idnest idnestList\n");
+        idnest();
+        idnestList();
+    } else {
+        fprintf(derivation, "idnestList -> ε\n");
+    }
+}
+
+// idnest → idOrSelf indiceList '.'
+void idnest() {
+    fprintf(derivation, "idnest -> idOrSelf indiceList '.'\n");
+    idOrSelf();
+    indiceList();
+    match("DOT");
+}
+
+// idOrSelf → 'id' | 'self'
+void idOrSelf() {
+    if (lookahead && strcmp(lookahead->tokenType, "VARIABLE") == 0) {
+        fprintf(derivation, "idOrSelf -> id\n");
+        match("VARIABLE");
+    } else if (lookahead && strcmp(lookahead->tokenType, "SELF") == 0) {
+        fprintf(derivation, "idOrSelf -> self\n");
+        match("SELF");
+    } else {
+        syntax_error("idOrSelf ('id' or 'self')");
+    }
+}
+
+// indiceList → indice indiceList | ε
+void indiceList() {
+    if (lookahead && strcmp(lookahead->tokenType, "LBRACKET") == 0) {
+        fprintf(derivation, "indiceList -> indice indiceList\n");
+        indice();
+        indiceList();
+    } else {
+        fprintf(derivation, "indiceList -> ε\n");
+    }
+}
+
+// indice → '[' arithExpr ']'
+void indice() {
+    fprintf(derivation, "indice -> '[' arithExpr ']'\n");
+    match("LBRACKET");
+    arithExpr(); // TODO: implement arithmetic expression parsing
+    match("RBRACKET");
+}
+
+
+// expr → arithExpr
+void expr() {
+    fprintf(derivation, "expr -> arithExpr\n");
+    arithExpr();
+}
+
+// arithExpr → term arithExpr_
+void arithExpr() {
+    fprintf(derivation, "arithExpr -> term arithExpr_\n");
+    term();
+    arithExpr_();
+}
+
+void arithExpr_() {
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "PLUS") == 0 ||
+         strcmp(lookahead->tokenType, "MINUS") == 0 ||
+         strcmp(lookahead->tokenType, "OR") == 0)) {
+        fprintf(derivation, "arithExpr_ -> addOp term arithExpr_\n");
+        addOp();
+        term();
+        arithExpr_();
+    } else {
+        fprintf(derivation, "arithExpr_ -> ε\n"); // no further addition/subtraction
+    }
+}
+
+void addOp() {
+    if (lookahead && strcmp(lookahead->tokenType, "PLUS") == 0) {
+        fprintf(derivation, "addOp -> '+'\n");
+        match("PLUS");
+    } else if (lookahead && strcmp(lookahead->tokenType, "MINUS") == 0) {
+        fprintf(derivation, "addOp -> '-'\n");
+        match("MINUS");
+    } else if (lookahead && strcmp(lookahead->tokenType, "OR") == 0) {
+        fprintf(derivation, "addOp -> 'or'\n");
+        match("OR");
+    } else {
+        syntax_error("addOp ('+', '-', or 'or')");
+    }
+}
+
+void term() {
+    fprintf(derivation, "term -> factor term_\n");
+    factor();
+    // TODO
+}
+
+void factor() {
+    if (lookahead && strcmp(lookahead->tokenType, "VARIABLE") == 0) {
+        fprintf(derivation, "factor -> 'id'\n");
+        match("VARIABLE"); // variable
+    } else {
+        fprintf(derivation, "factor -> ε \n");
+        syntax_error("factor (id, intLit, floatLit, or TODO)");
+    }
+}
+
+// Main driver
+int main() {
+    derivation = fopen("derivation.txt", "w");
+    if (!derivation) {
+        perror("derivation.txt");
+        return 1;
+    }
+
+    nextToken(); // prime the first token
+    prog();
+
+    if (lookahead != NULL) {
+        fprintf(stderr, "Syntax error: extra tokens at end starting at '%s' (line %d, col %d)\n",
+                lookahead->lexeme, lookahead->line, lookahead->column);
+        fclose(derivation);
+        return 1;
+    }
+
+    printf("Parsing successful! Derivation written to derivation.txt\n");
+    fclose(derivation);
+    return 0;
+}

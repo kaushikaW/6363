@@ -1,0 +1,19 @@
+// Test 9: Self Reference and Method Chaining
+class ChainTest {
+    private attribute value : integer;
+    
+    public func setValue(v : integer) => ChainTest {
+        self.value := v;
+        return (self);
+    }
+    
+    public func getValue() => integer {
+        return (self.value);
+    }
+    
+    public func process() => void {
+        local temp : integer;
+        temp := self.setValue(42).getValue();
+        write(temp);
+    }
+};

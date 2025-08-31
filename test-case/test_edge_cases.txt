@@ -1,0 +1,19 @@
+// Test 14: Edge Cases and Complex Nesting
+class Complex {
+    public constructor(a : integer[][][], b : CustomType) {
+        if (a[0][1][2] == 0) then {
+            while (b.method().getValue() > 0) {
+                if (self.helper(a[0][0][0]) <> 0) then {
+                    write(a[0][1][2]);
+                } else {
+                    read(a[1][0][0]);
+                };
+            };
+        } else {
+        };
+    }
+    
+    private func helper(val : integer) => integer {
+        return ((val + 1) * (val - 1));
+    }
+};

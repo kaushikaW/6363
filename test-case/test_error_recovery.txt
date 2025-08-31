@@ -1,0 +1,24 @@
+// Test 17: Error Recovery Test Cases
+// This file contains intentional syntax errors for testing error recovery
+
+class ErrorTest {
+    public attribute missing_semicolon : integer
+    private func incomplete() => 
+    
+    public func valid() => void {
+        local x : integer;
+        x := 10;
+    }
+    
+    // Missing closing brace for testing
+    public func another() => void {
+        local y : integer;
+};
+
+// Missing semicolon after class
+class AnotherClass {
+}
+
+func validAfterError() => void {
+    write(100);
+}

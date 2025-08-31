@@ -1,0 +1,3 @@
+flex lexer.l
+gcc lex.yy.c parser.c -o parser
+parser < source_program.txt

@@ -1,0 +1,23 @@
+// Test 6: Relational and Logical Operations
+func testLogic(x : integer, y : float) => integer {
+    local flag : integer;
+    
+    if (x == 10) then {
+        flag := 1;
+    } else {
+        flag := 0;
+    };
+    
+    if (x <> y) then {
+        flag := flag or 1;
+    } else {
+        flag := flag and 0;
+    };
+    
+    if (x <= 20 and y >= 3.0) then {
+        flag := not flag;
+    } else {
+    };
+    
+    return (flag);
+}

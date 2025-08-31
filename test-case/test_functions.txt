@@ -1,0 +1,14 @@
+// Test 4: Constructor and Function Definitions
+class TestClass {
+    public constructor(value : integer, name : float[10]) {
+        local temp : integer;
+        temp := value;
+    }
+    
+    public func calculate(a : integer, b : float) => integer {
+        return (a + 5);
+    }
+    
+    private func helper() => void {
+    }
+};
