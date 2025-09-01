@@ -17,6 +17,8 @@ void classOrImplOrFunc();
 
 void classDecl();
 
+void implDef();
+
 void InheritanceOpt();
 
 void MemberList();
@@ -91,6 +93,15 @@ void assignOp();
 
 void term_();
 
+void relOp();
+
+void multOp();
+
+void FuncDefList();
+
+void aParamsTailList();
+
+void statementTail();
 
 
 static void nextToken() {
@@ -157,6 +168,7 @@ void classOrImplOrFunc() {
         classDecl();
     } else if (strcmp(lookahead->tokenType, "IMPLEMENT") == 0) {
         fprintf(derivation, "classOrImplOrFunc -> implDef\n");
+        implDef();
     } else if (strcmp(lookahead->tokenType, "FUNC") == 0 ||
                strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0) {
         fprintf(derivation, "classOrImplOrFunc -> funcDef\n");
@@ -205,6 +217,30 @@ void visibility() {
         fprintf(derivation, "visibility -> private\n");
     } else {
         syntax_error("visibility ('public' or 'private')");
+    }
+}
+
+// implDef -> 'implement' 'id' '{' FuncDefList '}'
+void implDef() {
+    fprintf(derivation, "implDef -> 'implement' 'id' '{' FuncDefList '}'\n");
+    match("IMPLEMENT");
+    match("VARIABLE"); // the class name
+    match("LBRACE");
+    FuncDefList(); // <-- call FuncDefList, not just funcDef
+    match("RBRACE");
+}
+
+//FuncDefList         → funcDef FuncDefList | ε
+
+void FuncDefList() {
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "FUNC") == 0 ||
+         strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
+        fprintf(derivation, "FuncDefList -> funcDef FuncDefList\n");
+        funcDef();
+        FuncDefList();
+    } else {
+        fprintf(derivation, "FuncDefList -> ε\n");
     }
 }
 
@@ -272,7 +308,10 @@ void varDeclOrStmtList() {
          strcmp(lookahead->tokenType, "WRITE") == 0 ||
          strcmp(lookahead->tokenType, "RETURN") == 0 ||
          strcmp(lookahead->tokenType, "FUNC") == 0 || // function call start
-         strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
+         strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0 ||
+         strcmp(lookahead->tokenType, "SELF") == 0
+        )
+    ) {
         fprintf(derivation, "varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList\n");
         varDeclOrStmt();
         varDeclOrStmtList();
@@ -399,10 +438,79 @@ void returnType() {
 }
 
 // statement → assignStat ';'
+// statement → assignStat ';'
+//           | 'if' '(' relExpr ')' 'then' statBlock 'else' statBlock ';'
+//           | 'while' '(' relExpr ')' statBlock ';'
+//           | 'read' '(' variable ')' ';'
+//           | 'write' '(' expr ')' ';'
+//           | 'return' '(' expr ')' ';'
+//           | functionCall ';'
+
+// statement → other options | idOrSelf idOrSelfTail statementTail
 void statement() {
-    fprintf(derivation, "statement -> assignStat ';'\n");
-    assignStat();
-    match("SEMICOLON");
+    if (!lookahead) return;
+
+    if (strcmp(lookahead->tokenType, "READ") == 0) {
+        fprintf(derivation, "statement -> 'read' '(' variable ')' ';'\n");
+        match("READ");
+        match("LPAREN");
+        variable();
+        match("RPAREN");
+        match("SEMICOLON");
+    } else if (strcmp(lookahead->tokenType, "WRITE") == 0) {
+        fprintf(derivation, "statement -> 'write' '(' expr ')' ';'\n");
+        match("WRITE");
+        match("LPAREN");
+        expr();
+        match("RPAREN");
+        match("SEMICOLON");
+    } else if (strcmp(lookahead->tokenType, "RETURN") == 0) {
+        fprintf(derivation, "statement -> 'return' '(' expr ')' ';'\n");
+        match("RETURN");
+        match("LPAREN");
+        expr();
+        match("RPAREN");
+        match("SEMICOLON");
+    } else if (strcmp(lookahead->tokenType, "IF") == 0) {
+        fprintf(derivation, "TODO: statement -> 'if' '(' relExpr ')' 'then' statBlock 'else' statBlock ';'\n");
+        // TODO: implement if statement
+    } else if (strcmp(lookahead->tokenType, "WHILE") == 0) {
+        fprintf(derivation, "TODO: statement -> 'while' '(' relExpr ')' statBlock ';'\n");
+        // TODO: implement while statement
+    } else if (strcmp(lookahead->tokenType, "VARIABLE") == 0 || strcmp(lookahead->tokenType, "SELF") == 0) {
+        // Start of assignStat or functionCall
+        fprintf(derivation, "statement -> idOrSelf idOrSelfTail statementTail\n");
+        idOrSelf();
+        idOrSelfTail();
+        statementTail(); // Decide between functionCall or assignStat
+    } else {
+        fprintf(stderr, "Syntax error in statement: unexpected token %s\n", lookahead->tokenType);
+        exit(1);
+    }
+}
+
+// statementTail → '(' aParams ')' idNestTail ';' | assignOp expr ';'
+void statementTail() {
+    if (!lookahead) return;
+
+    if (strcmp(lookahead->tokenType, "LPAREN") == 0) {
+        // Function call
+        fprintf(derivation, "statementTail -> '(' aParams ')' idNestTail ';'\n");
+        match("LPAREN");
+        aParams();
+        match("RPAREN");
+        idNestTail();
+        match("SEMICOLON");
+    } else if (strcmp(lookahead->tokenType, "ASSIGN") == 0) {
+        // Assignment statement
+        fprintf(derivation, "statementTail -> assignOp expr ';'\n");
+        assignOp();
+        expr();
+        match("SEMICOLON");
+    } else {
+        fprintf(stderr, "Syntax error in statementTail: unexpected token %s\n", lookahead->tokenType);
+        exit(1);
+    }
 }
 
 // assignStat → variable assignOp expr
@@ -536,10 +644,12 @@ void idOrSelfTail() {
     if (lookahead && strcmp(lookahead->tokenType, "LPAREN") == 0) {
         fprintf(derivation, "idOrSelfTail -> '(' aParams ')' idNestTail\n");
         match("LPAREN");
-        aParams();          // TODO: implement aParams parsing
+        aParams(); // TODO: implement aParams parsing
         match("RPAREN");
         idNestTail();
-    } else if (lookahead && strcmp(lookahead->tokenType, "LBRACKET") == 0) {
+    } else if (lookahead && strcmp(lookahead->tokenType, "LBRACKET") == 0 ||
+               lookahead && strcmp(lookahead->tokenType, "DOT") == 0
+    ) {
         fprintf(derivation, "idOrSelfTail -> indiceList idNestTail\n");
         indiceList();
         idNestTail();
@@ -565,24 +675,125 @@ void functionCall() {
     fprintf(derivation, "functionCall -> idOrSelf '(' aParams ')' idNestTail\n");
     idOrSelf();
     match("LPAREN");
-    aParams();      // TODO: implement
+    aParams(); // TODO: implement
     match("RPAREN");
     idNestTail();
 }
 
 void aParams() {
-    fprintf(derivation, "aParams -> ε\n");
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "VARIABLE") == 0 ||
+         strcmp(lookahead->tokenType, "SELF") == 0 ||
+         strcmp(lookahead->tokenType, "INTEGER") == 0 ||
+         strcmp(lookahead->tokenType, "FLOAT") == 0 ||
+         strcmp(lookahead->tokenType, "LPAREN") == 0 ||
+         strcmp(lookahead->tokenType, "PLUS") == 0 ||
+         strcmp(lookahead->tokenType, "MINUS") == 0 ||
+         strcmp(lookahead->tokenType, "NOT") == 0)) {
+        fprintf(derivation, "aParams -> expr aParamsTailList\n");
+        expr();
+        aParamsTailList();
+    } else {
+        fprintf(derivation, "aParams -> ε\n");
+    }
+}
+
+void aParamsTailList() {
+    if (lookahead && strcmp(lookahead->tokenType, "COMMA") == 0) {
+        fprintf(derivation, "aParamsTailList -> ',' expr aParamsTailList\n");
+        match("COMMA");
+        expr();
+        aParamsTailList();
+    } else {
+        fprintf(derivation, "aParamsTailList -> ε\n");
+    }
 }
 
 void assignOp() {
-        fprintf(derivation, "assignOp -> := \n");
-        match("ASSIGN");
+    fprintf(derivation, "assignOp -> := \n");
+    match("ASSIGN");
 }
 
+// term_ → multOp factor term_ | ε
 void term_() {
-    fprintf(derivation, "term_ -> ε\n");
+    if (lookahead &&
+        (strcmp(lookahead->tokenType, "TIMES") == 0 ||
+         strcmp(lookahead->tokenType, "DIVIDE") == 0 ||
+         strcmp(lookahead->tokenType, "AND") == 0)) {
+        fprintf(derivation, "term_ -> multOp factor term_\n");
+        multOp();
+        factor();
+        term_();
+    } else {
+        fprintf(derivation, "term_ -> ε\n"); // no further multiplication/division/and
+    }
 }
 
+
+/* relOp → '==' | '<>' | '<' | '>' | '<=' | '>=' */
+void relOp() {
+    fprintf(derivation, "relOp -> ");
+
+    if (lookahead == NULL) {
+        syntax_error("relOp (unexpected end of input)");
+        return;
+    }
+
+    if (strcmp(lookahead->tokenType, "EQ") == 0) {
+        // '=='
+        fprintf(derivation, "==\n");
+        match("EQ");
+    } else if (strcmp(lookahead->tokenType, "NEQ") == 0) {
+        // '<>'
+        fprintf(derivation, "<>\n");
+        match("NEQ");
+    } else if (strcmp(lookahead->tokenType, "LT") == 0) {
+        // '<'
+        fprintf(derivation, "<\n");
+        match("LT");
+    } else if (strcmp(lookahead->tokenType, "GT") == 0) {
+        // '>'
+        fprintf(derivation, ">\n");
+        match("GT");
+    } else if (strcmp(lookahead->tokenType, "LE") == 0) {
+        // '<='
+        fprintf(derivation, "<=\n");
+        match("LE");
+    } else if (strcmp(lookahead->tokenType, "GE") == 0) {
+        // '>='
+        fprintf(derivation, ">=\n");
+        match("GE");
+    } else {
+        syntax_error("relOp (expected relational operator)");
+    }
+}
+
+
+/* multOp → '*' | '/' | 'and' */
+void multOp() {
+    fprintf(derivation, "multOp -> ");
+
+    if (lookahead == NULL) {
+        syntax_error("multOp (unexpected end of input)");
+        return;
+    }
+
+    if (strcmp(lookahead->tokenType, "TIMES") == 0) {
+        // '*'
+        fprintf(derivation, "*\n");
+        match("TIMES");
+    } else if (strcmp(lookahead->tokenType, "DIVIDE") == 0) {
+        // '/'
+        fprintf(derivation, "/\n");
+        match("DIVIDE");
+    } else if (strcmp(lookahead->tokenType, "AND") == 0) {
+        // 'and'
+        fprintf(derivation, "and\n");
+        match("AND");
+    } else {
+        syntax_error("multOp (expected *, /, or 'and')");
+    }
+}
 
 
 // Main driver

@@ -1,1 +1,78 @@
-git
+prog -> classOrImplOrFuncList
+classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList
+classOrImplOrFunc -> implDef
+implDef -> 'implement' 'id' '{' FuncDefList '}'
+FuncDefList -> funcDef FuncDefList
+funcDef -> funcHead funcBody
+funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
+fParams -> ε
+returnType -> void
+funcBody -> '{' varDeclOrStmtList '}'
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → localVarDecl
+localVarDecl -> 'local' varDecl
+varDecl -> 'id' ':' type arraySizeList ';'
+type -> integer
+arraySizeList -> ε
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → statement
+statement -> idOrSelf idOrSelfTail statementTail
+idOrSelf -> id
+idOrSelfTail -> ε
+statementTail -> assignOp expr ';'
+assignOp -> := 
+expr -> arithExpr
+arithExpr -> term arithExpr_
+term -> factor term_
+factor -> 'intLit'
+term_ -> ε
+arithExpr_ -> ε
+varDeclOrStmtList -> ε
+FuncDefList -> funcDef FuncDefList
+funcDef -> funcHead funcBody
+funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
+fParams -> 'id' ':' type arraySizeList fParamsTailList
+type -> integer
+arraySizeList -> ε
+fParamsTailList -> fParamsTail fParamsTailList
+fParamsTail -> ',' 'id' ':' type arraySizeList
+type -> float
+arraySizeList -> ε
+fParamsTailList -> ε
+returnType -> type
+funcBody -> '{' varDeclOrStmtList '}'
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → localVarDecl
+localVarDecl -> 'local' varDecl
+varDecl -> 'id' ':' type arraySizeList ';'
+type -> integer
+arraySizeList -> ε
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → statement
+statement -> idOrSelf idOrSelfTail statementTail
+idOrSelf -> id
+idOrSelfTail -> ε
+statementTail -> assignOp expr ';'
+assignOp -> := 
+expr -> arithExpr
+arithExpr -> term arithExpr_
+term -> factor term_
+factor -> idOrSelf idOrSelfTail
+idOrSelf -> id
+idOrSelfTail -> ε
+term_ -> ε
+arithExpr_ -> ε
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → statement
+statement -> 'return' '(' expr ')' ';'
+expr -> arithExpr
+arithExpr -> term arithExpr_
+term -> factor term_
+factor -> idOrSelf idOrSelfTail
+idOrSelf -> id
+idOrSelfTail -> ε
+term_ -> ε
+arithExpr_ -> ε
+varDeclOrStmtList -> ε
+FuncDefList -> ε
+classOrImplOrFuncList -> ε

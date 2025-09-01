@@ -1,4 +1,13 @@
-func testFunc() => void {
-local x : integer;
-x := x + 5;
+implement MyClass {
+    func firstFunc() => void {
+        local x : integer;
+        x := 10;
+    }
+
+    func secondFunc(a : integer, b : float) => integer {
+        local result : integer;
+        result := a;
+        return (result);
+    }
 }
+
