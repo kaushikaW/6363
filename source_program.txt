@@ -1,3 +1,4 @@
-class Base {
-    public attribute value : integer;
-};
+func testFunc() => void {
+local x : integer;
+x := x + 5;
+}

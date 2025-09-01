@@ -1,14 +1,1 @@
-prog -> classOrImplOrFuncList
-classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList
-classOrImplOrFunc -> classDecl
-classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
-InheritanceOpt -> ε
-MemberList -> visibility memberDecl MemberList
-visibility -> public
-memberDecl -> attributeDecl
-attributeDecl -> 'attribute' varDecl
-varDecl -> 'id' ':' type arraySizeList ';'
-type -> integer
-arraySizeList -> ε
-MemberList -> ε
-classOrImplOrFuncList -> ε
+git

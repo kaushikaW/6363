@@ -61,10 +61,6 @@ void assignStat();
 
 void variable();
 
-void idnestList();
-
-void idnest();
-
 void idOrSelf();
 
 void indiceList();
@@ -82,6 +78,19 @@ void term();
 void factor();
 
 void addOp();
+
+void idOrSelfTail();
+
+void functionCall();
+
+void aParams();
+
+void idNestTail();
+
+void assignOp();
+
+void term_();
+
 
 
 static void nextToken() {
@@ -400,36 +409,15 @@ void statement() {
 void assignStat() {
     fprintf(derivation, "assignStat -> variable assignOp expr\n");
     variable();
-    match("ASSIGN");
+    assignOp();
     expr();
 }
 
-// variable → idnestList 'id' indiceList
+// variable -> idOrSelf idOrSelfTail
 void variable() {
-    fprintf(derivation, "variable -> idnestList 'id' indiceList\n");
-    idnestList();
-    match("VARIABLE");
-    indiceList();
-}
-
-
-// idnestList → idnest idnestList | ε
-void idnestList() {
-    if (lookahead && (strcmp(lookahead->tokenType, "SELF") == 0)) {
-        fprintf(derivation, "idnestList -> idnest idnestList\n");
-        idnest();
-        idnestList();
-    } else {
-        fprintf(derivation, "idnestList -> ε\n");
-    }
-}
-
-// idnest → idOrSelf indiceList '.'
-void idnest() {
-    fprintf(derivation, "idnest -> idOrSelf indiceList '.'\n");
+    fprintf(derivation, "variable -> idOrSelf idOrSelfTail\n");
     idOrSelf();
-    indiceList();
-    match("DOT");
+    idOrSelfTail();
 }
 
 // idOrSelf → 'id' | 'self'
@@ -510,18 +498,92 @@ void addOp() {
 void term() {
     fprintf(derivation, "term -> factor term_\n");
     factor();
-    // TODO
+    term_();
 }
 
+// factor -> idOrSelf idOrSelfTail | 'intLit' | 'floatLit' | '(' arithExpr ')' | 'not' factor | sign factor
 void factor() {
-    if (lookahead && strcmp(lookahead->tokenType, "VARIABLE") == 0) {
-        fprintf(derivation, "factor -> 'id'\n");
-        match("VARIABLE"); // variable
+    if (lookahead && (strcmp(lookahead->tokenType, "VARIABLE") == 0 || strcmp(lookahead->tokenType, "SELF") == 0)) {
+        fprintf(derivation, "factor -> idOrSelf idOrSelfTail\n");
+        idOrSelf();
+        idOrSelfTail();
+    } else if (lookahead && strcmp(lookahead->tokenType, "INTEGER") == 0) {
+        fprintf(derivation, "factor -> 'intLit'\n");
+        match("INTEGER");
+    } else if (lookahead && strcmp(lookahead->tokenType, "FLOAT") == 0) {
+        fprintf(derivation, "factor -> 'floatLit'\n");
+        match("FLOAT");
+    } else if (lookahead && strcmp(lookahead->tokenType, "LPAREN") == 0) {
+        fprintf(derivation, "factor -> '(' arithExpr ')'\n");
+        match("LPAREN");
+        arithExpr();
+        match("RPAREN");
+    } else if (lookahead && strcmp(lookahead->tokenType, "NOT") == 0) {
+        fprintf(derivation, "factor -> 'not' factor\n");
+        match("NOT");
+        factor();
+    } else if (lookahead && (strcmp(lookahead->tokenType, "PLUS") == 0 || strcmp(lookahead->tokenType, "MINUS") == 0)) {
+        fprintf(derivation, "factor -> sign factor\n");
+        match(lookahead->tokenType);
+        factor();
     } else {
-        fprintf(derivation, "factor -> ε \n");
-        syntax_error("factor (id, intLit, floatLit, or TODO)");
+        syntax_error("factor (idOrSelf, intLit, floatLit, or '(' arithExpr ')')");
     }
 }
+
+// idOrSelfTail -> '(' aParams ')' idNestTail | indiceList idNestTail | ε
+void idOrSelfTail() {
+    if (lookahead && strcmp(lookahead->tokenType, "LPAREN") == 0) {
+        fprintf(derivation, "idOrSelfTail -> '(' aParams ')' idNestTail\n");
+        match("LPAREN");
+        aParams();          // TODO: implement aParams parsing
+        match("RPAREN");
+        idNestTail();
+    } else if (lookahead && strcmp(lookahead->tokenType, "LBRACKET") == 0) {
+        fprintf(derivation, "idOrSelfTail -> indiceList idNestTail\n");
+        indiceList();
+        idNestTail();
+    } else {
+        fprintf(derivation, "idOrSelfTail -> ε\n");
+    }
+}
+
+// idNestTail -> '.' idOrSelf idOrSelfTail | ε
+void idNestTail() {
+    if (lookahead && strcmp(lookahead->tokenType, "DOT") == 0) {
+        fprintf(derivation, "idNestTail -> '.' idOrSelf idOrSelfTail\n");
+        match("DOT");
+        idOrSelf();
+        idOrSelfTail();
+    } else {
+        fprintf(derivation, "idNestTail -> ε\n");
+    }
+}
+
+// functionCall -> idOrSelf '(' aParams ')' idNestTail
+void functionCall() {
+    fprintf(derivation, "functionCall -> idOrSelf '(' aParams ')' idNestTail\n");
+    idOrSelf();
+    match("LPAREN");
+    aParams();      // TODO: implement
+    match("RPAREN");
+    idNestTail();
+}
+
+void aParams() {
+    fprintf(derivation, "aParams -> ε\n");
+}
+
+void assignOp() {
+        fprintf(derivation, "assignOp -> := \n");
+        match("ASSIGN");
+}
+
+void term_() {
+    fprintf(derivation, "term_ -> ε\n");
+}
+
+
 
 // Main driver
 int main() {
