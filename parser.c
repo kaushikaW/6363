@@ -221,13 +221,11 @@ void arraySize() {
             fprintf(derivation, "arraySize -> '[' ']'\n");
             match("RBRACKET");
         }
-
     } else {
         fprintf(stderr, "Syntax error in arraySize: expected '[' but found %s\n", lookahead->tokenType);
         exit(1);
     }
 }
-
 
 
 void MemberList() {
@@ -559,7 +557,6 @@ idOrSelfTailWithAssignOrCall → assignOp expr
 
 void idOrSelfTailWithAssignOrCall() {
     if (strcmp(lookahead->tokenType, "ASSIGN") == 0) {
-        // :=
         fprintf(derivation, "idOrSelfTailWithAssignOrCall -> assignOp expr\n");
         assignOp();
         expr();
@@ -570,16 +567,19 @@ void idOrSelfTailWithAssignOrCall() {
         aParams();
         match("RPAREN");
         idNestTail();
-    } else if (strcmp(lookahead->tokenType, "LBRACK") == 0 ||
-               strcmp(lookahead->tokenType, "DOT") == 0
-    ) {
-        // array index
-        fprintf(derivation, "idOrSelfTailWithAssignOrCall -> indiceList idNestTail\n");
+    } else if (strcmp(lookahead->tokenType, "LBRACKET") == 0 ||
+               strcmp(lookahead->tokenType, "DOT") == 0) {
+        fprintf(derivation, "idOrSelfTailWithAssignOrCall -> (indiceList idNestTail | assignOp expr)\n");
+
+        // parse indices first
         indiceList();
         idNestTail();
-    } else {
-        fprintf(stderr, "Syntax error in idOrSelfTailWithAssignOrCall: unexpected token %s\n", lookahead->tokenType);
-        exit(1);
+
+        // after indiceList, if assignment appears, parse assignment
+        if (lookahead && strcmp(lookahead->tokenType, "ASSIGN") == 0) {
+            assignOp();
+            expr();
+        }
     }
 }
 
@@ -631,7 +631,7 @@ void indiceList() {
 void indice() {
     fprintf(derivation, "indice -> '[' arithExpr ']'\n");
     match("LBRACKET");
-    arithExpr(); // TODO: implement arithmetic expression parsing
+    arithExpr();
     match("RBRACKET");
 }
 
