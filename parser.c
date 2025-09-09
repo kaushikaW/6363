@@ -206,6 +206,28 @@ void InheritanceOpt() {
     fprintf(derivation, "InheritanceOpt -> ε\n");
 }
 
+// arraySize → '[' 'intLit' ']' | '[' ']'
+void arraySize() {
+    if (!lookahead) return;
+
+    if (strcmp(lookahead->tokenType, "LBRACKET") == 0) {
+        match("LBRACKET");
+
+        if (strcmp(lookahead->tokenType, "INTEGER") == 0) {
+            fprintf(derivation, "arraySize -> '[' intLit ']'\n");
+            match("INTEGER");
+            match("RBRACKET");
+        } else {
+            fprintf(derivation, "arraySize -> '[' ']'\n");
+            match("RBRACKET");
+        }
+
+    } else {
+        fprintf(stderr, "Syntax error in arraySize: expected '[' but found %s\n", lookahead->tokenType);
+        exit(1);
+    }
+}
+
 
 
 void MemberList() {
@@ -292,7 +314,7 @@ void varDecl() {
     match("VARIABLE");
     match("COLON");
     type();
-    arraySizeList(); // TODO
+    arraySizeList();
     match("SEMICOLON");
 }
 
@@ -352,9 +374,17 @@ void localVarDecl() {
     varDecl();
 }
 
-/* arraySizeList → (not fully implemented yet) */
+// arraySizeList → arraySize arraySizeList | ε
 void arraySizeList() {
-    fprintf(derivation, "arraySizeList -> ε\n");
+    if (!lookahead) return;
+
+    if (strcmp(lookahead->tokenType, "LBRACKET") == 0) {
+        fprintf(derivation, "arraySizeList -> arraySize arraySizeList\n");
+        arraySize();
+        arraySizeList();
+    } else {
+        fprintf(derivation, "arraySizeList -> ε\n");
+    }
 }
 
 void type() {

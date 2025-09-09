@@ -10,7 +10,9 @@ varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
 varDeclOrStmt → localVarDecl
 localVarDecl -> 'local' varDecl
 varDecl -> 'id' ':' type arraySizeList ';'
-type -> id
+type -> integer
+arraySizeList -> arraySize arraySizeList
+arraySize -> '[' intLit ']'
 arraySizeList -> ε
 varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
 varDeclOrStmt → localVarDecl
@@ -28,68 +30,13 @@ assignOp -> :=
 expr -> arithExpr
 arithExpr -> term arithExpr_
 term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
 factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
 term_ -> ε
 arithExpr_ -> ε
 varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
 varDeclOrStmt → statement
-statement -> 'write' '(' expr ')' ';'
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
+statement -> 'while' '(' relExpr ')' statBlock ';'
+relExpr -> arithExpr relOp arithExpr
 arithExpr -> term arithExpr_
 term -> factor term_
 factor -> idOrSelf idOrSelfTail
@@ -97,74 +44,10 @@ idOrSelf -> id
 idOrSelfTail -> ε
 term_ -> ε
 arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
+relOp -> <
 arithExpr -> term arithExpr_
 term -> factor term_
 factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
-varDeclOrStmt → statement
-statement -> 'if' '(' relExpr ')' 'then' statBlock 'else' statBlock ';'
-relExpr -> arithExpr relOp arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-relOp -> >
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
 term_ -> ε
 arithExpr_ -> ε
 statBlock -> '{' statementList '}'
@@ -172,204 +55,21 @@ statementList -> statement statementList
 statement -> idOrSelfStatement ;
 idOrSelfStatement   → idOrSelf idOrSelfTailWithAssignOrCall
 idOrSelf -> id
-idOrSelfTailWithAssignOrCall -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
+idOrSelfTailWithAssignOrCall -> assignOp expr
+assignOp -> := 
 expr -> arithExpr
 arithExpr -> term arithExpr_
 term -> factor term_
 factor -> idOrSelf idOrSelfTail
 idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
+idOrSelfTail -> ε
+term_ -> ε
+arithExpr_ -> addOp term arithExpr_
+addOp -> '+'
 term -> factor term_
 factor -> 'intLit'
 term_ -> ε
 arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-statementList -> statement statementList
-statement -> 'if' '(' relExpr ')' 'then' statBlock 'else' statBlock ';'
-relExpr -> arithExpr relOp arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-relOp -> >
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-statBlock -> '{' statementList '}'
-statementList -> statement statementList
-statement -> idOrSelfStatement ;
-idOrSelfStatement   → idOrSelf idOrSelfTailWithAssignOrCall
-idOrSelf -> id
-idOrSelfTailWithAssignOrCall -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> indiceList idNestTail
-indiceList -> ε
-idNestTail -> '.' idOrSelf idOrSelfTail
-idOrSelf -> id
-idOrSelfTail -> '(' aParams ')' idNestTail
-aParams -> expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ',' expr aParamsTailList
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-term_ -> ε
-arithExpr_ -> ε
-aParamsTailList -> ε
-idNestTail -> ε
-statementList -> ε
-statBlock -> '{' statementList '}'
-statementList -> ε
-statementList -> ε
-statBlock -> '{' statementList '}'
 statementList -> ε
 varDeclOrStmtList -> ε
 classOrImplOrFuncList -> ε
