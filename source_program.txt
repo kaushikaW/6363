@@ -1,46 +1,39 @@
 class MyClass {
-    public attribute x : integer;
     public attribute arr : integer[5];
-    private func getValue() => integer;
+    private func computeSum()=>integer;
 };
 
 implement MyClass {
-    func getValue() => integer {
-        local y : integer;
-        local sumArr : integer[5];
+    func computeSum() => integer {
+        local sum : integer;
+        local i : integer;
+        i := 0;
+        sum := 0;
 
-        y := 0;
-        sumArr[0] := 10;
-        sumArr[1] := 20;
-        sumArr[2] := 30;
-        sumArr[3] := 40;
-        sumArr[4] := 50;
-
-        if (arr[0] > 0) then {
-            y := arr[0] + sumArr[0];
-        } else {
-            y := arr[1] + sumArr[1];
+        while (i < 5) {
+            sum := sum + self.arr[i];
+            i := i + 1;
         };
 
-        return (y);
+        if (sum > 10) then {
+            sum := sum * 2;
+        } else {
+            sum := sum - 1;
+        };
+
+        return(sum);
     }
 }
-
-// Global function to demonstrate output
 func main() => void {
     local obj : MyClass;
-    local result : integer;
+    obj.arr[0] := 1;
+    obj.arr[1] := 2;
+    obj.arr[2] := 3;
+    obj.arr[3] := 4;
+    obj.arr[4] := 5;
 
-    // Initialize object's array
-    obj.arr[0] := 5;
-    obj.arr[1] := 15;
-    obj.arr[2] := 25;
-    obj.arr[3] := 35;
-    obj.arr[4] := 45;
+    local total : integer;
+    total := obj.computeSum();
 
-    // Call the function and store result
-    result := obj.getValue();
-
-    // Output the result
-    write(result);
+    write(total);
 }

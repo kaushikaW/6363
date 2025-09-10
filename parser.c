@@ -115,6 +115,8 @@ void arraySize();
 
 void idOrSelfTailWithAssignOrCall();
 
+void BaseIdTail();
+
 
 static void nextToken() {
     if (lookahead) {
@@ -159,7 +161,8 @@ void classOrImplOrFuncList() {
     if (lookahead &&
         (strcmp(lookahead->tokenType, "CLASS") == 0 ||
          strcmp(lookahead->tokenType, "IMPLEMENT") == 0 ||
-         strcmp(lookahead->tokenType, "FUNC") == 0)) {
+         strcmp(lookahead->tokenType, "FUNC") == 0 ||
+         strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
         fprintf(derivation, "classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList\n");
         classOrImplOrFunc();
         classOrImplOrFuncList();
@@ -202,8 +205,34 @@ void classDecl() {
     match("SEMICOLON");
 }
 
+// InheritanceOpt → 'isa' 'id' BaseIdTail | ε
 void InheritanceOpt() {
-    fprintf(derivation, "InheritanceOpt -> ε\n");
+    if (!lookahead) return;
+
+    if (strcmp(lookahead->tokenType, "ISA") == 0) {
+        fprintf(derivation, "InheritanceOpt -> 'isa' 'id' BaseIdTail\n");
+        match("ISA");
+        match("VARIABLE");
+        BaseIdTail();
+    } else {
+        fprintf(derivation, "InheritanceOpt -> ε\n");
+        // epsilon production, do nothing
+    }
+}
+
+// BaseIdTail → ',' 'id' BaseIdTail | ε
+void BaseIdTail() {
+    if (!lookahead) return;
+
+    if (strcmp(lookahead->tokenType, "COMMA") == 0) {
+        fprintf(derivation, "BaseIdTail -> ',' 'id' BaseIdTail\n");
+        match("COMMA");
+        match("VARIABLE");
+        BaseIdTail(); // recursive call
+    } else {
+        fprintf(derivation, "BaseIdTail -> ε\n");
+        // epsilon production, do nothing
+    }
 }
 
 // arraySize → '[' 'intLit' ']' | '[' ']'
@@ -265,7 +294,6 @@ void implDef() {
 }
 
 //FuncDefList         → funcDef FuncDefList | ε
-
 void FuncDefList() {
     if (lookahead &&
         (strcmp(lookahead->tokenType, "FUNC") == 0 ||
@@ -740,7 +768,7 @@ void idOrSelfTail() {
     if (lookahead && strcmp(lookahead->tokenType, "LPAREN") == 0) {
         fprintf(derivation, "idOrSelfTail -> '(' aParams ')' idNestTail\n");
         match("LPAREN");
-        aParams(); // TODO: implement aParams parsing
+        aParams();
         match("RPAREN");
         idNestTail();
     } else if (lookahead && strcmp(lookahead->tokenType, "LBRACKET") == 0 ||
@@ -771,7 +799,7 @@ void functionCall() {
     fprintf(derivation, "functionCall -> idOrSelf '(' aParams ')' idNestTail\n");
     idOrSelf();
     match("LPAREN");
-    aParams(); // TODO: implement
+    aParams();
     match("RPAREN");
     idNestTail();
 }
