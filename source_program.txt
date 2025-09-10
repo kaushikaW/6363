@@ -24,6 +24,11 @@ implement MyClass {
         return(sum);
     }
 }
+/*
+&
+*/
+
+$
 func main() => void {
     local obj : MyClass;
     obj.arr[0] := 1;

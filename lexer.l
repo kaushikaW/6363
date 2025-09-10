@@ -21,6 +21,17 @@ Token* create_token(const char* tokenType, const char* yytext, int length) {
     t->column = token_start_col;
     return t;
 }
+
+void update_position(const char* text, int length) {
+    for (int i = 0; i < length; i++) {
+        if (text[i] == '\n') {
+            line_num++;
+            col_num = 1;
+        } else {
+            col_num++;
+        }
+    }
+}
 %}
 
 %option noyywrap
@@ -98,7 +109,7 @@ floatNum   {integerNum}{fraction}({exp})?
 \n              { line_num++; col_num = 1; }
 
 \/\/[^\n]*      { /* comment ignored */ }
-\/\*([^*]|\*+[^*/])*\*+\/ { }
+\/\*([^*]|\*+[^*/])*\*+\/ {update_position(yytext, yyleng);}
 
 .               { return create_token("ILLEGAL", yytext, yyleng); }
 
