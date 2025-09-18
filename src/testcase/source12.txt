@@ -1,0 +1,20 @@
+//testing function call with if else
+
+func maxOfTwo(a : integer, b : integer) => integer {
+    local result : integer;    // store the bigger number
+
+    if (a > b) then {          // if a is bigger
+        result := a;
+    } else {                   // else b is bigger
+        result := b;
+    };
+
+    return(result);            // return the bigger value
+}
+
+func main() => void {
+    local bigger : integer;
+
+    bigger := maxOfTwo(10, 20);  // call if–else function
+    write(bigger);
+}

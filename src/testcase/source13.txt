@@ -1,0 +1,22 @@
+//testing function call with  while
+
+func sumToN(n : integer) => integer {
+    local sum : integer;       // running total
+    local i : integer;         // loop counter
+
+    sum := 0;                  // initialize sum
+    i := 1;                    // start counter from 1
+
+    while (i <= n) {           // loop until i > n
+        sum := sum + i;        // add i to sum
+        i := i + 1;            // increase counter
+    }
+
+    return(sum);               // return the total
+}
+
+func main() => void {
+    local total : integer;
+    total := sumToN(5);          // call while function
+    write(total);
+}

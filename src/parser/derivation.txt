@@ -1,4 +1,4 @@
-prog -> classOrImplOrFuncList->
+prog -> classOrImplOrFuncList
 classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList
 classOrImplOrFunc -> funcDef
 funcDef -> funcHead funcBody

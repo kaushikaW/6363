@@ -1,0 +1,60 @@
+// Function testing relational ops and unary sign
+
+func testRelOps(a : integer, b : integer) => integer {
+    local result : integer;
+
+    if (a <= b) then {
+        result := a + b;
+    } else {
+        result := -a;   // unary minus sign factor
+    };
+
+    return(result);
+}
+
+// Function testing read and write
+
+func testIO() => void {
+    local x : integer;
+    local y : integer;
+
+    read(x);         // read input
+    y := x * 2;
+    write(y);        // write output
+}
+
+// Function testing multiple parameters
+
+func addThree(a : integer, b : integer, c : integer) => integer {
+    return(a + b + c);
+}
+
+// Function testing arrays
+
+func testArray() => integer {
+    local arr : integer[5];
+    arr[0] := 10;          // array indexing
+    arr[1] := arr[0] + 5;  // assignment using array
+    return(arr[1]);
+}
+
+// Main function calling everything
+
+func main() => void {
+    local r1 : integer;
+    local r2 : integer;
+    local r3 : integer;
+
+    r1 := testRelOps(3, 5);
+    write(r1);
+
+    r2 := testLogic(2, 3);
+    write(r2);
+
+    testIO();
+
+    r3 := addThree(1, 2, 3);
+    write(r3);
+
+    write(testArray());
+}

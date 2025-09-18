@@ -1,3 +1,24 @@
-flex lexer.l
-gcc lex.yy.c parser.c -o parser
-parser < source_program.txt
+cd/src/flex
+flex -o src/lexer/lexer.l
+
+gcc -o parser src/parser/file_main.c src/parser/parser.c src/lexer/lex.yy.c
+
+
+
+
+// test program
+parser < src/testcase/source1.txt
+parser < src/testcase/source2.txt
+parser < src/testcase/source3.txt
+parser < src/testcase/source4.txt
+parser < src/testcase/source5.txt
+parser < src/testcase/source6.txt
+parser < src/testcase/source7.txt
+parser < src/testcase/source8.txt
+parser < src/testcase/source9.txt
+parser < src/testcase/source10.txt
+parser < src/testcase/source11.txt
+parser < src/testcase/source12.txt
+parser < src/testcase/source13.txt
+
+

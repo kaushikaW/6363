@@ -1,0 +1,14 @@
+// Class with multiple Inheritance
+class Animal {
+    public attribute rank : integer;
+};
+
+class Mammalian {
+     public func drinkMilk() => void;
+};
+
+class Dog isa Animal , Mammalian {
+    public attribute noOfLegs : integer;
+    private func bark() => void;
+};
+

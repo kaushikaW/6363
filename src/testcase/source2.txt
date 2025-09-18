@@ -1,0 +1,5 @@
+// Class with Attributes
+class HelloWorld {
+    public attribute message : id;
+    private attribute count : integer;
+};

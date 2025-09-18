@@ -1,0 +1,18 @@
+// Using a constructor  , class 
+class MyClass {
+    public attribute x : integer;
+    public attribute y : float;
+};
+
+constructor (a : integer, b : float) {
+    x := a;
+    y := b;
+}
+
+func main() => void {
+    local obj : MyClass;
+    obj := MyClass(10, 3);
+
+    write(obj.x);
+    write(obj.y);
+}

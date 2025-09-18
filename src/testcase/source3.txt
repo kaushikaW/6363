@@ -1,0 +1,3 @@
+// Simple Function Declarations
+func greet() => void {
+}

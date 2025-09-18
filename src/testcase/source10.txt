@@ -1,0 +1,20 @@
+// Implement Block with Function Definition  and function parameters
+
+class Dog {
+ public func isBark(yesOrNo : integer) => integer;
+};
+
+implement Dog {
+    func isBark(yesOrNo : integer) => integer {
+    yesOrNo := 1;
+    return(yesOrNo);
+    }
+}
+
+func main() => void {
+    //initialize class
+    local dogObj : Dog;
+    
+    // function call
+    d.isBark(1);
+}

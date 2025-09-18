@@ -1,124 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "token.h"
+#include "../lexer/token.h"
+#include "parser.h"
+
 
 extern Token *yylex();
 
 Token *lookahead; // current token
 FILE *derivation; // output file for derivation
 
-// Forward declarations
-void prog();
-
-void classOrImplOrFuncList();
-
-void classOrImplOrFunc();
-
-void classDecl();
-
-void implDef();
-
-void InheritanceOpt();
-
-void MemberList();
-
-void visibility();
-
-void memberDecl();
-
-void attributeDecl();
-
-void funcDecl();
-
-void funcHead();
-
-void fParams();
-
-void fParamsTailList();
-
-void fParamsTail();
-
-void returnType();
-
-void arraySizeList();
-
-void varDecl();
-
-void type();
-
-void funcDef();
-
-void funcBody();
-
-void varDeclOrStmtList();
-
-void varDeclOrStmt();
-
-void localVarDecl();
-
-void statement();
-
-void assignStat();
-
-void variable();
-
-void idOrSelf();
-
-void indiceList();
-
-void indice();
-
-void expr();
-
-void arithExpr();
-
-void arithExpr_();
-
-void term();
-
-void factor();
-
-void addOp();
-
-void idOrSelfTail();
-
-void functionCall();
-
-void aParams();
-
-void idNestTail();
-
-void assignOp();
-
-void term_();
-
-void relOp();
-
-void multOp();
-
-void FuncDefList();
-
-void aParamsTailList();
-
-void statementTail();
-
-void statementList();
-
-void statBlock();
-
-void relExpr();
-
-void idOrSelfStatement();
-
-void arraySize();
-
-void idOrSelfTailWithAssignOrCall();
-
-void BaseIdTail();
-
-
-static void nextToken() {
+// Free the memory of the current token before fetching the next one
+void nextToken() {
     if (lookahead) {
         free(lookahead->tokenType);
         free(lookahead->lexeme);
@@ -132,17 +25,21 @@ static void nextToken() {
 }
 
 
-static void syntax_error(const char *expected) {
+void syntax_error(const char *expected) {
+    // Print error with token info
     if (lookahead) {
         fprintf(stderr, "Syntax error: expected %s but found %s (lexeme '%s') at line %d, col %d\n",
                 expected, lookahead->tokenType, lookahead->lexeme, lookahead->line, lookahead->column);
-    } else {
-        fprintf(stderr, "Syntax error: expected %s but found EOF\n", expected);
+    }
+    // Print error when no more tokens are left
+
+    else {
+        fprintf(stderr, "Syntax error: expected %s\n", expected);
     }
     exit(1);
 }
 
-static void match(const char *expectedType) {
+void match(const char *expectedType) {
     if (lookahead && strcmp(lookahead->tokenType, expectedType) == 0) {
         nextToken();
     } else {
@@ -152,10 +49,18 @@ static void match(const char *expectedType) {
 
 // Grammar rules
 
+
+// prog → classOrImplOrFuncList
+
 void prog() {
     fprintf(derivation, "prog -> classOrImplOrFuncList\n");
     classOrImplOrFuncList();
 }
+
+/*
+classOrImplOrFuncList → classOrImplOrFunc classOrImplOrFuncList
+| ε
+ */
 
 void classOrImplOrFuncList() {
     if (lookahead &&
@@ -171,6 +76,12 @@ void classOrImplOrFuncList() {
     }
 }
 
+/*
+classOrImplOrFunc   → classDecl
+                    | implDef
+                    | funcDef
+
+ */
 
 void classOrImplOrFunc() {
     if (lookahead == NULL) {
@@ -193,7 +104,7 @@ void classOrImplOrFunc() {
     }
 }
 
-
+// classDecl           → 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
 void classDecl() {
     fprintf(derivation, "classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'\n");
     match("CLASS");
@@ -389,7 +300,7 @@ void varDeclOrStmt() {
         localVarDecl();
     } else {
         fprintf(derivation, "varDeclOrStmt → statement\n");
-        statement(); // TODO
+        statement();
     }
 }
 
@@ -464,7 +375,7 @@ void fParams() {
         match("VARIABLE");
         match("COLON");
         type();
-        arraySizeList(); // TODO
+        arraySizeList();
         fParamsTailList();
     } else {
         fprintf(derivation, "fParams -> ε\n");
@@ -489,7 +400,7 @@ void fParamsTail() {
     match("VARIABLE");
     match("COLON");
     type();
-    arraySizeList(); // TODO
+    arraySizeList();
 }
 
 void returnType() {
@@ -957,28 +868,4 @@ void statBlock() {
     } else {
         fprintf(derivation, "statBlock -> ε\n");
     }
-}
-
-
-// Main driver
-int main() {
-    derivation = fopen("derivation.txt", "w");
-    if (!derivation) {
-        perror("derivation.txt");
-        return 1;
-    }
-
-    nextToken(); // prime the first token
-    prog();
-
-    if (lookahead != NULL) {
-        fprintf(stderr, "Syntax error: extra tokens at end starting at '%s' (line %d, col %d)\n",
-                lookahead->lexeme, lookahead->line, lookahead->column);
-        fclose(derivation);
-        return 1;
-    }
-
-    printf("Parsing successful! Derivation written to derivation.txt\n");
-    fclose(derivation);
-    return 0;
 }

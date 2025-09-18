@@ -1,3 +1,0 @@
-// Test 19: Minimal Valid Program
-func main() => void {
-}

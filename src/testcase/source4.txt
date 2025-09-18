@@ -1,0 +1,5 @@
+// Function with Local Variables
+func greet() => void {
+    local msg : id;
+    local counter : integer[5];
+}

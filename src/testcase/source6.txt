@@ -1,0 +1,6 @@
+// Function with Statements
+func greet() => void {
+    local counter : integer;
+    counter := 0;
+    write(1);
+}

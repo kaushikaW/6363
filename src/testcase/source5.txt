@@ -1,0 +1,5 @@
+// Function with return
+func greet() => integer {
+    local msg : id;
+    local counter : integer[5];
+}

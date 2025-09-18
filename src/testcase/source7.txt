@@ -1,0 +1,9 @@
+// Class Inheritance
+class Animal {
+    public attribute rank : integer;
+};
+
+class Dog isa Animal {
+    public attribute noOfLegs : integer;
+    private func bark() => void;
+};
