@@ -3,12 +3,76 @@
 #include <string.h>
 #include "../lexer/token.h"
 #include "parser.h"
+#include "AST/ast.h"
+#include "symbol_table.h"
+#include "semantic_analysis.h"
+
+
+
 
 
 extern Token *yylex();
 
 Token *lookahead; // current token
 FILE *derivation; // output file for derivation
+
+
+ASTNode* createASTNode(char* kind, const char* value, int line, int column) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    if (!node) {
+        fprintf(stderr, "Memory allocation failed for ASTNode\n");
+        exit(EXIT_FAILURE);
+    }
+
+    node->kind = kind ? strdup(kind) : NULL;
+    node->value = value ? strdup(value) : NULL;
+    node->children = NULL;
+    node->childCount = 0;
+    node->line = line;
+    node->column = column;
+
+    return node;
+}
+
+
+
+void addChild(ASTNode* parent, ASTNode* child) {
+    if (!parent || !child) return;
+    parent->childCount++;
+    parent->children = (ASTNode**) realloc(parent->children, parent->childCount * sizeof(ASTNode*));
+    parent->children[parent->childCount - 1] = child;
+}
+
+void freeAST(ASTNode* node) {
+    if (!node) return;
+    for (int i = 0; i < node->childCount; i++)
+        freeAST(node->children[i]);
+    free(node->children);
+    if (node->value) free(node->value);
+    free(node);
+}
+
+
+void printAST(ASTNode* node, int indent) {
+    if (!node) return;
+
+    // Print current node with indentation
+    for (int i = 0; i < indent; i++)
+        printf("|   ");
+
+    printf("|-- %s", node->kind);
+    if (node->value)
+        printf(" (%s)", node->value);
+
+    printf(" [line %d, col %d]\n", node->line, node->column);
+
+    // Recursively print children
+    for (int i = 0; i < node->childCount; i++) {
+        printAST(node->children[i], indent + 1);
+    }
+}
+
+
 
 // Free the memory of the current token before fetching the next one
 void nextToken() {
@@ -52,29 +116,46 @@ void match(const char *expectedType) {
 
 // prog → classOrImplOrFuncList
 
-void prog() {
+ASTNode* prog() {
     fprintf(derivation, "prog -> classOrImplOrFuncList\n");
-    classOrImplOrFuncList();
+    ASTNode* node = createASTNode("classOrImplOrFuncList", NULL,  0, 0);
+
+    ASTNode* children = classOrImplOrFuncList();
+    if (children) addChild(node, children);
+
+    return node;
 }
+
 
 /*
 classOrImplOrFuncList → classOrImplOrFunc classOrImplOrFuncList
 | ε
  */
 
-void classOrImplOrFuncList() {
-    if (lookahead &&
-        (strcmp(lookahead->tokenType, "CLASS") == 0 ||
-         strcmp(lookahead->tokenType, "IMPLEMENT") == 0 ||
-         strcmp(lookahead->tokenType, "FUNC") == 0 ||
-         strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
-        fprintf(derivation, "classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList\n");
-        classOrImplOrFunc();
-        classOrImplOrFuncList();
-    } else {
+ASTNode* classOrImplOrFuncList() {
+    ASTNode* node = createASTNode("classOrImplOrFuncList", NULL, 0, 0);
+
+    while (lookahead &&
+           (strcmp(lookahead->tokenType, "CLASS") == 0 ||
+            strcmp(lookahead->tokenType, "IMPLEMENT") == 0 ||
+            strcmp(lookahead->tokenType, "FUNC") == 0 ||
+            strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
+
+        ASTNode* child = classOrImplOrFunc();
+        if (child) addChild(node, child);
+
+    }
+
+    if (node->childCount == 0) {
         fprintf(derivation, "classOrImplOrFuncList -> ε\n");
+        free(node);
+        return NULL;
+    } else {
+        fprintf(derivation, "classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList\n");
+        return node;
     }
 }
+
 
 /*
 classOrImplOrFunc   → classDecl
@@ -83,15 +164,22 @@ classOrImplOrFunc   → classDecl
 
  */
 
-void classOrImplOrFunc() {
+ASTNode* classOrImplOrFunc() {
+    ASTNode* node = createASTNode("classOrImplOrFunc", NULL, 0, 0);
     if (lookahead == NULL) {
         syntax_error("classOrImplOrFunc (classDecl, implDef, or funcDef)");
-        return;
+        return NULL;
     }
 
     if (strcmp(lookahead->tokenType, "CLASS") == 0) {
         fprintf(derivation, "classOrImplOrFunc -> classDecl\n");
-        classDecl();
+
+        ASTNode* child = classDecl();
+
+        if (child) addChild(node, child);
+
+
+
     } else if (strcmp(lookahead->tokenType, "IMPLEMENT") == 0) {
         fprintf(derivation, "classOrImplOrFunc -> implDef\n");
         implDef();
@@ -102,19 +190,38 @@ void classOrImplOrFunc() {
     } else {
         syntax_error("classOrImplOrFunc (expected class, implement, or function)");
     }
+    return node;
 }
 
-// classDecl           → 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
-void classDecl() {
+// classDecl → 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
+ASTNode* classDecl() {
+
+    ASTNode* parent = createASTNode("classDecl", NULL,
+                                lookahead->line, lookahead->column);
+
     fprintf(derivation, "classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'\n");
+
     match("CLASS");
-    match("VARIABLE");
-    InheritanceOpt();
+    char* className = strdup(lookahead->lexeme);
+    match("IDENTIFIER");
+
+    ASTNode* child1 = createASTNode("ClassIdentifier",  className,lookahead->line, lookahead->column);
+    if (child1) addChild(parent, child1);
+
+
+//    ASTNode* inheritance = InheritanceOpt();
+//    if (inheritance) addChild(node, inheritance);
+
     match("LBRACE");
-    MemberList();
+
+    ASTNode* child2 = MemberList();
+    if (child2) addChild(parent, child2);
+
     match("RBRACE");
     match("SEMICOLON");
+    return parent;
 }
+
 
 // InheritanceOpt → 'isa' 'id' BaseIdTail | ε
 void InheritanceOpt() {
@@ -123,7 +230,7 @@ void InheritanceOpt() {
     if (strcmp(lookahead->tokenType, "ISA") == 0) {
         fprintf(derivation, "InheritanceOpt -> 'isa' 'id' BaseIdTail\n");
         match("ISA");
-        match("VARIABLE");
+        match("IDENTIFIER");
         BaseIdTail();
     } else {
         fprintf(derivation, "InheritanceOpt -> ε\n");
@@ -138,7 +245,7 @@ void BaseIdTail() {
     if (strcmp(lookahead->tokenType, "COMMA") == 0) {
         fprintf(derivation, "BaseIdTail -> ',' 'id' BaseIdTail\n");
         match("COMMA");
-        match("VARIABLE");
+        match("IDENTIFIER");
         BaseIdTail(); // recursive call
     } else {
         fprintf(derivation, "BaseIdTail -> ε\n");
@@ -167,38 +274,68 @@ void arraySize() {
     }
 }
 
-
-void MemberList() {
-    if (lookahead &&
-        (strcmp(lookahead->tokenType, "PUBLIC") == 0 ||
-         strcmp(lookahead->tokenType, "PRIVATE") == 0)) {
-        fprintf(derivation, "MemberList -> visibility memberDecl MemberList\n");
-
-        visibility();
-        memberDecl();
-        MemberList();
-    } else {
+// MemberList -> visibility memberDecl MemberList
+ASTNode* MemberList() {
+    if (!lookahead ||
+        (strcmp(lookahead->tokenType, "PUBLIC") != 0 &&
+         strcmp(lookahead->tokenType, "PRIVATE") != 0)) {
         fprintf(derivation, "MemberList -> ε\n");
+        return NULL;
+         }
+
+    fprintf(derivation, "MemberList -> visibility memberDecl MemberList\n");
+
+    ASTNode* parent = createASTNode("MemberList", NULL,
+                                    lookahead->line, lookahead->column);
+
+    ASTNode* vis = visibility();
+    if (vis) addChild(parent, vis);
+
+    ASTNode* mem = memberDecl();
+    if (mem) addChild(parent, mem);
+
+    ASTNode* sibling = MemberList(); // recursive call
+    if (sibling) {
+        // Instead of adding as child, return as sibling to caller
+        ASTNode* wrapper = createASTNode("MemberListWrapper", NULL, 0, 0);
+        addChild(wrapper, parent);
+        addChild(wrapper, sibling);
+        return wrapper;
     }
+
+    return parent;
 }
 
-void visibility() {
+
+
+// visibility -> public | private
+ASTNode* visibility() {
+    ASTNode* node = createASTNode("visibility", NULL,
+                                  lookahead->line, lookahead->column);
     if (lookahead && strcmp(lookahead->tokenType, "PUBLIC") == 0) {
+
         match("PUBLIC");
         fprintf(derivation, "visibility -> public\n");
+        node->value = "public";
+
+
     } else if (lookahead && strcmp(lookahead->tokenType, "PRIVATE") == 0) {
         match("PRIVATE");
         fprintf(derivation, "visibility -> private\n");
+        node->value = "private";
     } else {
         syntax_error("visibility ('public' or 'private')");
+        return NULL;
     }
+
+    return node;
 }
 
 // implDef -> 'implement' 'id' '{' FuncDefList '}'
 void implDef() {
     fprintf(derivation, "implDef -> 'implement' 'id' '{' FuncDefList '}'\n");
     match("IMPLEMENT");
-    match("VARIABLE"); // the class name
+    match("IDENTIFIER"); // the class name
     match("LBRACE");
     FuncDefList(); // <-- call FuncDefList, not just funcDef
     match("RBRACE");
@@ -217,7 +354,11 @@ void FuncDefList() {
     }
 }
 
-void memberDecl() {
+// memberDecl -> funcDecl | attributeDecl
+
+ASTNode* memberDecl() {
+  ASTNode* parent = createASTNode("memberDecl", NULL,lookahead->line, lookahead->column);
+
     if (lookahead &&
         (strcmp(lookahead->tokenType, "FUNC") == 0 ||
          strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
@@ -225,12 +366,16 @@ void memberDecl() {
         funcDecl();
     } else if (lookahead && strcmp(lookahead->tokenType, "ATTRIBUTE") == 0) {
         fprintf(derivation, "memberDecl -> attributeDecl\n");
-        attributeDecl();
+        ASTNode* child1 = attributeDecl();
+        if (child1) addChild(parent, child1);
     } else {
         syntax_error("memberDecl (funcDecl or attributeDecl)");
     }
+
+    return parent;
 }
 
+//funcDecl -> funcHead ;
 void funcDecl() {
     fprintf(derivation, "funcDecl -> funcHead ;\n");
     funcHead();
@@ -238,21 +383,38 @@ void funcDecl() {
 }
 
 /* attributeDecl → 'attribute' varDecl */
-void attributeDecl() {
+ASTNode* attributeDecl() {
+  ASTNode* parent = createASTNode("attributeDecl", NULL,lookahead->line, lookahead->column);
+
     fprintf(derivation, "attributeDecl -> 'attribute' varDecl\n");
     match("ATTRIBUTE");
-    varDecl();
+    ASTNode* child1 = createASTNode("attribute", "attribute",lookahead->line, lookahead->column);
+    if (child1) addChild(parent, child1);
+    ASTNode* child2 = varDecl();
+    if (child2) addChild(parent, child2);
+    return parent;
 }
 
 /* varDecl → 'id' ':' type arraySizeList ';' */
-void varDecl() {
+ASTNode* varDecl() {
+    ASTNode* parent = createASTNode("varDecl", NULL,lookahead->line, lookahead->column);
+
     fprintf(derivation, "varDecl -> 'id' ':' type arraySizeList ';'\n");
 
-    match("VARIABLE");
+    ASTNode* child1 = createASTNode("IDENTIFIER", lookahead->lexeme, lookahead->line, lookahead->column);
+    if (child1) addChild(parent, child1);
+
+    match("IDENTIFIER");
+
     match("COLON");
-    type();
+
+    ASTNode* child2 = type();
+    if (child2) addChild(parent, child2);
+
     arraySizeList();
     match("SEMICOLON");
+
+    return parent;
 }
 
 /* funcDef → funcHead funcBody */
@@ -274,7 +436,7 @@ void funcBody() {
 void varDeclOrStmtList() {
     if (lookahead &&
         (strcmp(lookahead->tokenType, "LOCAL") == 0 ||
-         strcmp(lookahead->tokenType, "VARIABLE") == 0 ||
+         strcmp(lookahead->tokenType, "IDENTIFIER") == 0 ||
          strcmp(lookahead->tokenType, "IF") == 0 ||
          strcmp(lookahead->tokenType, "WHILE") == 0 ||
          strcmp(lookahead->tokenType, "READ") == 0 ||
@@ -324,23 +486,36 @@ void arraySizeList() {
     }
 }
 
-void type() {
+// type -> integer | float | id
+ASTNode* type() {
+ ASTNode* parent = createASTNode("type", NULL,lookahead->line, lookahead->column);
     if (lookahead) {
         if (strcmp(lookahead->tokenType, "INTEGER_TYPE") == 0) {
             fprintf(derivation, "type -> integer\n");
             match("INTEGER_TYPE");
+
+            parent->value = "integer";
+
+
         } else if (strcmp(lookahead->tokenType, "FLOAT_TYPE") == 0) {
             fprintf(derivation, "type -> float\n");
             match("FLOAT_TYPE");
-        } else if (strcmp(lookahead->tokenType, "VARIABLE") == 0) {
+
+            parent->value = "float";
+
+        } else if (strcmp(lookahead->tokenType, "IDENTIFIER") == 0) {
             fprintf(derivation, "type -> id\n");
-            match("VARIABLE"); // user-defined type name
+            match("IDENTIFIER");
+
+            parent->value = "indentifier";
+
         } else {
             syntax_error("type (integer, float, or id)");
         }
     } else {
         syntax_error("type (integer, float, or id)");
     }
+    return parent;
 }
 
 /* funcHead → 'func' 'id' '(' fParams ')' => returnType | 'constructor' '(' fParams ') */
@@ -349,7 +524,7 @@ void funcHead() {
         fprintf(derivation, "funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType\n");
 
         match("FUNC");
-        match("VARIABLE");
+        match("IDENTIFIER");
         match("LPAREN");
         fParams();
         match("RPAREN");
@@ -370,9 +545,9 @@ void funcHead() {
 
 /* fParams → 'id' ':' type arraySizeList fParamsTailList | ε */
 void fParams() {
-    if (lookahead && strcmp(lookahead->tokenType, "VARIABLE") == 0) {
+    if (lookahead && strcmp(lookahead->tokenType, "IDENTIFIER") == 0) {
         fprintf(derivation, "fParams -> 'id' ':' type arraySizeList fParamsTailList\n");
-        match("VARIABLE");
+        match("IDENTIFIER");
         match("COLON");
         type();
         arraySizeList();
@@ -397,17 +572,18 @@ void fParamsTailList() {
 void fParamsTail() {
     fprintf(derivation, "fParamsTail -> ',' 'id' ':' type arraySizeList\n");
     match("COMMA");
-    match("VARIABLE");
+    match("IDENTIFIER");
     match("COLON");
     type();
     arraySizeList();
 }
 
+// returnType -> type | void
 void returnType() {
     if (lookahead &&
         (strcmp(lookahead->tokenType, "INTEGER_TYPE") == 0 ||
          strcmp(lookahead->tokenType, "FLOAT_TYPE") == 0 ||
-         strcmp(lookahead->tokenType, "VARIABLE") == 0)) {
+         strcmp(lookahead->tokenType, "IDENTIFIER") == 0)) {
         fprintf(derivation, "returnType -> type\n");
         match(lookahead->tokenType);
     } else if (lookahead && strcmp(lookahead->tokenType, "VOID") == 0) {
@@ -418,12 +594,14 @@ void returnType() {
     }
 }
 
-/* statement           → 'if' '(' relExpr ')' 'then' statBlock 'else' statBlock ';'
-                    | 'while' '(' relExpr ')' statBlock ';'
-                    | 'read' '(' variable ')' ';'
-                    | 'write' '(' expr ')' ';'
-                    | 'return' '(' expr ')' ';'
-                    | idOrSelf idOrSelfTail statementTail
+/*
+statement ->
+      'read' '(' variable ')' ';'
+    | 'write' '(' expr ')' ';'
+    | 'return' '(' expr ')' ';'
+    | 'if' '(' relExpr ')' 'then' statBlock 'else' statBlock ';'
+    | 'while' '(' relExpr ')' statBlock ';'
+    | idOrSelfStatement ';'
 */
 
 
@@ -470,7 +648,7 @@ void statement() {
         match("RPAREN");
         statBlock();
         match("SEMICOLON");
-    } else if (strcmp(lookahead->tokenType, "VARIABLE") == 0 || strcmp(lookahead->tokenType, "SELF") == 0) {
+    } else if (strcmp(lookahead->tokenType, "IDENTIFIER") == 0 || strcmp(lookahead->tokenType, "SELF") == 0) {
         // Start of assignStat or functionCall
         fprintf(derivation, "statement -> idOrSelfStatement ;\n");
         idOrSelfStatement();
@@ -544,9 +722,9 @@ void variable() {
 
 // idOrSelf → 'id' | 'self'
 void idOrSelf() {
-    if (lookahead && strcmp(lookahead->tokenType, "VARIABLE") == 0) {
+    if (lookahead && strcmp(lookahead->tokenType, "IDENTIFIER") == 0) {
         fprintf(derivation, "idOrSelf -> id\n");
-        match("VARIABLE");
+        match("IDENTIFIER");
     } else if (lookahead && strcmp(lookahead->tokenType, "SELF") == 0) {
         fprintf(derivation, "idOrSelf -> self\n");
         match("SELF");
@@ -609,6 +787,7 @@ void arithExpr() {
     arithExpr_();
 }
 
+//arithExpr_-> addOp term arithExpr_ | arithExpr_
 void arithExpr_() {
     if (lookahead &&
         (strcmp(lookahead->tokenType, "PLUS") == 0 ||
@@ -622,6 +801,8 @@ void arithExpr_() {
         fprintf(derivation, "arithExpr_ -> ε\n"); // no further addition/subtraction
     }
 }
+
+//aaddOp -> '+' | '-' | 'or'
 
 void addOp() {
     if (lookahead && strcmp(lookahead->tokenType, "PLUS") == 0) {
@@ -638,6 +819,7 @@ void addOp() {
     }
 }
 
+// term -> factor term_
 void term() {
     fprintf(derivation, "term -> factor term_\n");
     factor();
@@ -646,7 +828,7 @@ void term() {
 
 // factor -> idOrSelf idOrSelfTail | 'intLit' | 'floatLit' | '(' arithExpr ')' | 'not' factor | sign factor
 void factor() {
-    if (lookahead && (strcmp(lookahead->tokenType, "VARIABLE") == 0 || strcmp(lookahead->tokenType, "SELF") == 0)) {
+    if (lookahead && (strcmp(lookahead->tokenType, "IDENTIFIER") == 0 || strcmp(lookahead->tokenType, "SELF") == 0)) {
         fprintf(derivation, "factor -> idOrSelf idOrSelfTail\n");
         idOrSelf();
         idOrSelfTail();
@@ -715,9 +897,10 @@ void functionCall() {
     idNestTail();
 }
 
+// aParams -> expr aParamsTailList | ε
 void aParams() {
     if (lookahead &&
-        (strcmp(lookahead->tokenType, "VARIABLE") == 0 ||
+        (strcmp(lookahead->tokenType, "IDENTIFIER") == 0 ||
          strcmp(lookahead->tokenType, "SELF") == 0 ||
          strcmp(lookahead->tokenType, "INTEGER") == 0 ||
          strcmp(lookahead->tokenType, "FLOAT") == 0 ||
@@ -733,6 +916,7 @@ void aParams() {
     }
 }
 
+// aParamsTailList -> ',' expr aParamsTailList | ε
 void aParamsTailList() {
     if (lookahead && strcmp(lookahead->tokenType, "COMMA") == 0) {
         fprintf(derivation, "aParamsTailList -> ',' expr aParamsTailList\n");
@@ -744,6 +928,7 @@ void aParamsTailList() {
     }
 }
 
+//assignOp -> :=
 void assignOp() {
     fprintf(derivation, "assignOp -> := \n");
     match("ASSIGN");
@@ -838,7 +1023,7 @@ void statementList() {
          strcmp(lookahead->tokenType, "READ") == 0 ||
          strcmp(lookahead->tokenType, "WRITE") == 0 ||
          strcmp(lookahead->tokenType, "RETURN") == 0 ||
-         strcmp(lookahead->tokenType, "VARIABLE") == 0 ||
+         strcmp(lookahead->tokenType, "IDENTIFIER") == 0 ||
          strcmp(lookahead->tokenType, "SELF") == 0)) {
         fprintf(derivation, "statementList -> statement statementList\n");
         statement();
@@ -861,7 +1046,7 @@ void statBlock() {
                 strcmp(lookahead->tokenType, "READ") == 0 ||
                 strcmp(lookahead->tokenType, "WRITE") == 0 ||
                 strcmp(lookahead->tokenType, "RETURN") == 0 ||
-                strcmp(lookahead->tokenType, "VARIABLE") == 0 ||
+                strcmp(lookahead->tokenType, "IDENTIFIER") == 0 ||
                 strcmp(lookahead->tokenType, "SELF") == 0)) {
         fprintf(derivation, "statBlock -> statement\n");
         statement();
@@ -869,3 +1054,35 @@ void statBlock() {
         fprintf(derivation, "statBlock -> ε\n");
     }
 }
+int main() {
+    derivation = fopen("derivation.txt", "w");
+    if (!derivation) {
+        perror("derivation.txt");
+        return 1;
+    }
+
+    nextToken(); // read first token
+    ASTNode* root = prog();
+
+    if (lookahead != NULL) {
+        fprintf(stderr, "Syntax error: extra tokens at end starting at '%s' (line %d, col %d)\n",
+                lookahead->lexeme, lookahead->line, lookahead->column);
+        fclose(derivation);
+        return 1;
+    }
+
+    printf("Parsing successful! Derivation written to derivation.txt\n");
+    printf("\nAbstract Syntax Tree:\n");
+    printAST(root, 0);
+
+    // Create global table and build all nested ones
+    SymbolTable *globalTable = createSymbolTable("GLOBAL");
+    buildSymbolTable(root, globalTable, "GLOBAL", NULL);
+
+    printSymbolTable(globalTable);
+    freeSymbolTable(globalTable);
+
+    fclose(derivation);
+    return 0;
+}
+

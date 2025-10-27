@@ -1,0 +1,105 @@
+prog → classOrImplOrFuncList
+
+classOrImplOrFuncList → classOrImplOrFunc classOrImplOrFuncList | ε
+
+classOrImplOrFunc → classDecl | implDef | funcDef
+
+classDecl → 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
+
+InheritanceOpt → 'isa' 'id' BaseIdTail | ε
+
+BaseIdTail → ',' 'id' BaseIdTail | ε
+
+FuncDefList → funcDef FuncDefList | ε
+
+implDef → 'implement' 'id' '{' FuncDefList '}'
+
+funcDef → funcHead funcBody
+
+funcHead → 'func' 'id' '(' fParams ')' '=>' returnType | 'constructor' '(' fParams ')'
+
+returnType → type | 'void'
+
+fParams → 'id' ':' type arraySizeList fParamsTailList | ε
+
+fParamsTailList → fParamsTail fParamsTailList | ε
+
+fParamsTail → ',' 'id' ':' type arraySizeList
+
+MemberList → visibility memberDecl MemberList | ε
+
+visibility → 'public' | 'private'
+
+memberDecl → funcDecl | attributeDecl
+
+funcDecl → funcHead ';'
+
+attributeDecl → 'attribute' varDecl
+
+varDecl → 'id' ':' type arraySizeList ';'
+
+arraySizeList → arraySize arraySizeList | ε
+
+arraySize → '[' 'intLit' ']' | '[' ']'
+
+type → 'integer' | 'float' | 'id'
+
+funcBody → '{' varDeclOrStmtList '}'
+
+varDeclOrStmtList → varDeclOrStmt varDeclOrStmtList | ε
+
+varDeclOrStmt → varDecl | stmt
+
+stmt → assignmentStmt
+       | ifStmt
+       | whileStmt
+       | returnStmt
+       | funcCallStmt
+       | breakStmt
+       | continueStmt
+       | blockStmt
+
+assignmentStmt → 'id' '=' expr ';'
+
+ifStmt → 'if' '(' expr ')' stmtBlock ElseOpt
+
+ElseOpt → 'else' stmtBlock | ε
+
+whileStmt → 'while' '(' expr ')' stmtBlock
+
+returnStmt → 'return' expr ';'
+
+funcCallStmt → funcCall ';'
+
+breakStmt → 'break' ';'
+
+continueStmt → 'continue' ';'
+
+blockStmt → '{' varDeclOrStmtList '}'
+
+funcCall → 'id' '(' args ')'
+
+args → expr argsTail | ε
+
+argsTail → ',' expr argsTail | ε
+
+expr → expr '+' expr
+       | expr '-' expr
+       | expr '*' expr
+       | expr '/' expr
+       | expr '%' expr
+       | expr '==' expr
+       | expr '!=' expr
+       | expr '<' expr
+       | expr '<=' expr
+       | expr '>' expr
+       | expr '>=' expr
+       | expr '&&' expr
+       | expr '||' expr
+       | '!' expr
+       | '(' expr ')'
+       | funcCall
+       | 'id'
+       | 'intLit'
+       | 'floatLit'
+       | 'stringLit'

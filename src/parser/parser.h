@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include "../lexer/token.h"
+#include "AST/ast.h"
+
 
 extern Token *lookahead;
 extern FILE *derivation;
@@ -13,25 +15,25 @@ void match(const char *expectedType);
 
 void syntax_error(const char *expected);
 
-void prog();
+ASTNode* prog();
 
-void classOrImplOrFuncList();
+ASTNode* classOrImplOrFuncList();
 
-void classOrImplOrFunc();
+ASTNode* classOrImplOrFunc();
 
-void classDecl();
+ASTNode* classDecl();
 
 void implDef();
 
 void InheritanceOpt();
 
-void MemberList();
+ASTNode* MemberList();
 
-void visibility();
+ASTNode* visibility();
 
-void memberDecl();
+ASTNode* memberDecl();
 
-void attributeDecl();
+ASTNode* attributeDecl();
 
 void funcDecl();
 
@@ -47,9 +49,9 @@ void returnType();
 
 void arraySizeList();
 
-void varDecl();
+ASTNode* varDecl();
 
-void type();
+ASTNode* type();
 
 void funcDef();
 

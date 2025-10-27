@@ -1017,7 +1017,7 @@ YY_RULE_SETUP
 case 48:
 YY_RULE_SETUP
 #line 106 "lexer.l"
-{ return create_token("VARIABLE", yytext, yyleng); }
+{ return create_token("IDENTIFIER", yytext, yyleng); }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP

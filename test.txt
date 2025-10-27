@@ -1,0 +1,7 @@
+// Simple Class Declarations
+class HelloWorld {
+ };
+
+
+class HelloWorld2 {
+ };

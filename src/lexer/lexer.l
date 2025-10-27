@@ -103,7 +103,7 @@ floatNum   {integerNum}{fraction}({exp})?
 "self"          { return create_token("SELF", yytext, yyleng); }
 "constructor"   { return create_token("CONSTRUCTOR", yytext, yyleng); }
 
-{id}            { return create_token("VARIABLE", yytext, yyleng); }
+{id}            { return create_token("IDENTIFIER", yytext, yyleng); }
 
 [ \t]+          { col_num += yyleng; }  /* skip whitespace */
 \n              { line_num++; col_num = 1; }

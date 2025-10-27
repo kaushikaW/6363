@@ -1,3 +1,9 @@
 // Simple Class Declarations
-class HelloWorld {
+class HelloWorld1 {
  };
+
+ class HelloWorld2 {
+  };
+
+
+

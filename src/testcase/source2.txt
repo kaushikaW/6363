@@ -1,5 +1,12 @@
-// Class with Attributes
-class HelloWorld {
-    public attribute message : id;
-    private attribute count : integer;
+class CAR {
+    public attribute age : float;
 };
+
+class Beach {
+    public attribute shore : float;
+    private attribute mold : float;
+    private attribute mold : integer;
+
+
+};
+
