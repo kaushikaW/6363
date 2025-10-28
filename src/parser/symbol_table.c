@@ -15,6 +15,14 @@ SymbolTable* createSymbolTable(const char *scopeName) {
 void insertSymbol(SymbolTable *table, const char *name, SymbolKind kind,
                   const char *type, const char *scope, const char *visibility,
                   int line, int column) {
+    // Check for duplicate in the same scope
+    Symbol *existing = lookupSymbol(table, name, scope);
+    if (existing) {
+        fprintf(stderr, "Semantic error: Duplicate declaration of '%s' at line %d, col %d\n",
+                name, line, column);
+        return; // Skip insertion or exit, depending on policy
+    }
+
     Symbol *sym = malloc(sizeof(Symbol));
     sym->name = strdup(name);
     sym->kind = kind;
@@ -91,4 +99,106 @@ void freeSymbolTable(SymbolTable *table) {
     free(table->children);
     free(table->scopeName);
     free(table);
+}
+
+
+
+// symbol table genartion
+
+// --- Helper to find a child by kind ---
+ASTNode* findChild(ASTNode *node, const char *kind) {
+    for (int i = 0; i < node->childCount; i++) {
+        if (strcmp(node->children[i]->kind, kind) == 0)
+            return node->children[i];
+    }
+    return NULL;
+}
+
+// --- Handle attribute declarations ---
+void handleAttributeDecl(ASTNode *node, SymbolTable *currentTable, const char *scope, const char *visibility) {
+    ASTNode *varDecl = findChild(node, "varDecl");
+    if (!varDecl || varDecl->childCount < 2) return;
+
+    const char *varName = varDecl->children[0]->value;
+    const char *varType = varDecl->children[1]->value;
+
+    insertSymbol(currentTable, varName, SYM_ATTRIBUTE, varType, scope, visibility, node->line, node->column);
+}
+
+// --- Handle function declarations ---
+void handleFuncDecl(ASTNode *node, SymbolTable *currentTable, const char *scope, const char *visibility) {
+    ASTNode *funcHead = findChild(node, "funcHead");
+    if (!funcHead) return;
+
+    ASTNode *funcIdentifier = findChild(funcHead, "funcIdentifier");
+    ASTNode *returnTypeNode = findChild(funcHead, "returnType");
+
+    if (!funcIdentifier) return;
+
+    const char *funcName = funcIdentifier->value;
+    const char *returnType = returnTypeNode ? returnTypeNode->value : "void";
+
+    insertSymbol(currentTable, funcName, SYM_FUNCTION, returnType, scope, visibility,
+                 funcIdentifier->line, funcIdentifier->column);
+}
+
+// --- Handle class declarations ---
+void handleClassDecl(ASTNode *node, SymbolTable *currentTable) {
+    ASTNode *classIdNode = findChild(node, "ClassIdentifier");
+    if (!classIdNode) return;
+
+    const char *className = classIdNode->value;
+
+    // Insert class into current table
+    insertSymbol(currentTable, className, SYM_CLASS, NULL, NULL, "public",
+                 classIdNode->line, classIdNode->column);
+
+    // Create nested table for class scope
+    SymbolTable *classTable = createSymbolTable(className);
+    addNestedTable(currentTable, classTable);
+
+    // Recurse into children with new scope
+    for (int i = 0; i < node->childCount; i++) {
+        buildSymbolTable(node->children[i], classTable, className, "public");
+    }
+}
+
+// --- Main Symbol Table Builder ---
+void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scope, const char *visibility) {
+    if (!root) return;
+
+    if (strcmp(root->kind, "classDecl") == 0) {
+        handleClassDecl(root, currentTable);
+        return;
+    }
+
+    if (strcmp(root->kind, "attributeDecl") == 0) {
+        handleAttributeDecl(root, currentTable, scope, visibility);
+        return;
+    }
+
+    if (strcmp(root->kind, "funcDecl") == 0) {
+        handleFuncDecl(root, currentTable, scope, visibility);
+        return;
+    }
+
+    // Handle MemberList and visibility updates
+    if (strcmp(root->kind, "MemberList") == 0 || strcmp(root->kind, "MemberListWrapper") == 0) {
+        for (int i = 0; i < root->childCount; i++) {
+            ASTNode *child = root->children[i];
+            const char *childVisibility = visibility;
+
+            if (strcmp(child->kind, "visibility") == 0) {
+                childVisibility = child->value; // update visibility for this scope
+            } else {
+                buildSymbolTable(child, currentTable, scope, childVisibility);
+            }
+        }
+        return;
+    }
+
+    // Recurse for other node types
+    for (int i = 0; i < root->childCount; i++) {
+        buildSymbolTable(root->children[i], currentTable, scope, visibility);
+    }
 }

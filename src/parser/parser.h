@@ -35,9 +35,9 @@ ASTNode* memberDecl();
 
 ASTNode* attributeDecl();
 
-void funcDecl();
+ASTNode* funcDecl();
 
-void funcHead();
+ASTNode* funcHead();
 
 void fParams();
 
@@ -45,7 +45,7 @@ void fParamsTailList();
 
 void fParamsTail();
 
-void returnType();
+ASTNode* returnType();
 
 void arraySizeList();
 
@@ -53,15 +53,15 @@ ASTNode* varDecl();
 
 ASTNode* type();
 
-void funcDef();
+ASTNode* funcDef();
 
-void funcBody();
+ASTNode* funcBody();
 
-void varDeclOrStmtList();
+ASTNode* varDeclOrStmtList();
 
-void varDeclOrStmt();
+ASTNode* varDeclOrStmt();
 
-void localVarDecl();
+ASTNode* localVarDecl();
 
 void statement();
 

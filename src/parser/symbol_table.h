@@ -1,5 +1,6 @@
 #ifndef SYMBOL_TABLE_H
 #define SYMBOL_TABLE_H
+#include "AST/ast.h"
 
 typedef enum { SYM_CLASS, SYM_FUNCTION, SYM_ATTRIBUTE, SYM_VARIABLE } SymbolKind;
 
@@ -30,5 +31,25 @@ void addNestedTable(SymbolTable *parent, SymbolTable *child);
 void printSymbolTable(SymbolTable *table);
 void freeSymbolTable(SymbolTable *table);
 Symbol* lookupSymbol(SymbolTable *table, const char *name, const char *scope);
+
+
+// symbol table genartion
+// --- Find child node by kind ---
+ASTNode* findChild(ASTNode *node, const char *kind);
+
+// --- Handle attribute declarations ---
+void handleAttributeDecl(ASTNode *node, SymbolTable *currentTable, const char *scope, const char *visibility);
+
+// --- Handle function declarations ---
+void handleFuncDecl(ASTNode *node, SymbolTable *currentTable, const char *scope, const char *visibility);
+
+// --- Handle class declarations ---
+void handleClassDecl(ASTNode *node, SymbolTable *currentTable);
+
+// --- Main symbol table builder ---
+void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scope, const char *visibility);
+
+
+
 
 #endif

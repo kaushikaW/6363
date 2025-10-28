@@ -5,6 +5,7 @@
 #include "AST/ast.h"
 #include "symbol_table.h"
 
+// Entry point for semantic analysis
+void performSemanticAnalysis(ASTNode *root, SymbolTable *globalTable);
 
-SymbolTable* buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scope, const char *visibility);
 #endif

@@ -118,7 +118,7 @@ void match(const char *expectedType) {
 
 ASTNode* prog() {
     fprintf(derivation, "prog -> classOrImplOrFuncList\n");
-    ASTNode* node = createASTNode("classOrImplOrFuncList", NULL,  0, 0);
+    ASTNode* node = createASTNode("prog", NULL,  0, 0);
 
     ASTNode* children = classOrImplOrFuncList();
     if (children) addChild(node, children);
@@ -141,8 +141,8 @@ ASTNode* classOrImplOrFuncList() {
             strcmp(lookahead->tokenType, "FUNC") == 0 ||
             strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
 
-        ASTNode* child = classOrImplOrFunc();
-        if (child) addChild(node, child);
+        ASTNode* child_classOrImplOrFunc = classOrImplOrFunc();
+        if (child_classOrImplOrFunc) addChild(node, child_classOrImplOrFunc);
 
     }
 
@@ -175,7 +175,6 @@ ASTNode* classOrImplOrFunc() {
         fprintf(derivation, "classOrImplOrFunc -> classDecl\n");
 
         ASTNode* child = classDecl();
-
         if (child) addChild(node, child);
 
 
@@ -186,7 +185,9 @@ ASTNode* classOrImplOrFunc() {
     } else if (strcmp(lookahead->tokenType, "FUNC") == 0 ||
                strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0) {
         fprintf(derivation, "classOrImplOrFunc -> funcDef\n");
-        funcDef();
+                ASTNode* child_funcDef = funcDef();
+                if (child_funcDef) addChild(node, child_funcDef);
+
     } else {
         syntax_error("classOrImplOrFunc (expected class, implement, or function)");
     }
@@ -357,29 +358,36 @@ void FuncDefList() {
 // memberDecl -> funcDecl | attributeDecl
 
 ASTNode* memberDecl() {
-  ASTNode* parent = createASTNode("memberDecl", NULL,lookahead->line, lookahead->column);
+  ASTNode* parent_createASTNode = createASTNode("memberDecl", NULL,lookahead->line, lookahead->column);
 
     if (lookahead &&
         (strcmp(lookahead->tokenType, "FUNC") == 0 ||
          strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0)) {
         fprintf(derivation, "memberDecl -> funcDecl\n");
-        funcDecl();
+        ASTNode* child_funcDecl =  funcDecl();
+        if(child_funcDecl) {
+         addChild(parent_createASTNode, child_funcDecl);
+        }
     } else if (lookahead && strcmp(lookahead->tokenType, "ATTRIBUTE") == 0) {
         fprintf(derivation, "memberDecl -> attributeDecl\n");
         ASTNode* child1 = attributeDecl();
-        if (child1) addChild(parent, child1);
+        if (child1) addChild(parent_createASTNode, child1);
     } else {
         syntax_error("memberDecl (funcDecl or attributeDecl)");
     }
 
-    return parent;
+    return parent_createASTNode;
 }
 
 //funcDecl -> funcHead ;
-void funcDecl() {
+ASTNode* funcDecl() {
+    ASTNode* parent_node = createASTNode("funcDecl", NULL,lookahead->line, lookahead->column);
     fprintf(derivation, "funcDecl -> funcHead ;\n");
-    funcHead();
+    ASTNode* child_funcHead = funcHead();
+    if (child_funcHead) addChild(parent_node, child_funcHead);
     match("SEMICOLON");
+
+    return parent_node;
 }
 
 /* attributeDecl → 'attribute' varDecl */
@@ -418,22 +426,37 @@ ASTNode* varDecl() {
 }
 
 /* funcDef → funcHead funcBody */
-void funcDef() {
+ASTNode* funcDef() {
+    ASTNode* parent_funcDef = createASTNode("funcDef", NULL,lookahead->line, lookahead->column);
     fprintf(derivation, "funcDef -> funcHead funcBody\n");
-    funcHead();
-    funcBody();
+
+    ASTNode* child_funcHead = funcHead();
+    if (child_funcHead) addChild(parent_funcDef, child_funcHead);
+
+    ASTNode* child_funcBody =     funcBody();
+    if (child_funcBody) addChild(parent_funcDef, child_funcBody);
+
+
+    return parent_funcDef;
 }
 
 /* funcBody -> '{' varDeclOrStmtList '}' */
-void funcBody() {
+ASTNode* funcBody() {
+    ASTNode* parent_funcBody = createASTNode("funcBody", NULL,lookahead->line, lookahead->column);
     fprintf(derivation, "funcBody -> '{' varDeclOrStmtList '}'\n");
     match("LBRACE");
-    varDeclOrStmtList();
+    ASTNode* child_varDeclOrStmtList = varDeclOrStmtList();
+    if (child_varDeclOrStmtList) {
+      addChild(parent_funcBody, child_varDeclOrStmtList);
+    }
+
     match("RBRACE");
+
+    return parent_funcBody;
 }
 
-/* varDeclOrStmtList → varDeclOrStmt varDeclOrStmtList  | ε */
-void varDeclOrStmtList() {
+/* varDeclOrStmtList → varDeclOrStmt varDeclOrStmtList | ε */
+ASTNode* varDeclOrStmtList() {
     if (lookahead &&
         (strcmp(lookahead->tokenType, "LOCAL") == 0 ||
          strcmp(lookahead->tokenType, "IDENTIFIER") == 0 ||
@@ -442,35 +465,72 @@ void varDeclOrStmtList() {
          strcmp(lookahead->tokenType, "READ") == 0 ||
          strcmp(lookahead->tokenType, "WRITE") == 0 ||
          strcmp(lookahead->tokenType, "RETURN") == 0 ||
-         strcmp(lookahead->tokenType, "FUNC") == 0 || // function call start
+         strcmp(lookahead->tokenType, "FUNC") == 0 ||  // function call start
          strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0 ||
-         strcmp(lookahead->tokenType, "SELF") == 0
-        )
-    ) {
+         strcmp(lookahead->tokenType, "SELF") == 0))
+    {
+        // Create parent node for the first element
+        ASTNode* parent_varDeclOrStmtList = createASTNode("varDeclOrStmtList", NULL, lookahead->line, lookahead->column);
+
         fprintf(derivation, "varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList\n");
-        varDeclOrStmt();
-        varDeclOrStmtList();
-    } else {
-        fprintf(derivation, "varDeclOrStmtList -> ε\n"); // empty body
+
+        // Parse first varDeclOrStmt
+        ASTNode* child_varDeclOrStmt = varDeclOrStmt();
+        if (child_varDeclOrStmt) addChild(parent_varDeclOrStmtList, child_varDeclOrStmt);
+
+        // Parse rest recursively
+        ASTNode* rest = varDeclOrStmtList();
+        if (rest) {
+            // Wrap firstNode and rest as siblings
+            ASTNode* wrapper = createASTNode("varDeclOrStmtListWrapper", NULL, 0, 0);
+            addChild(wrapper, parent_varDeclOrStmtList);
+            addChild(wrapper, rest);
+            return wrapper;
+        }
+
+        return parent_varDeclOrStmtList; // only one element
+    }
+    else {
+        fprintf(derivation, "varDeclOrStmtList -> ε\n");
+        return NULL; // empty list
     }
 }
 
+
 /* varDeclOrStmt → localVarDecl | statement */
-void varDeclOrStmt() {
+ASTNode* varDeclOrStmt() {
+  ASTNode* parent_varDeclOrStmt = createASTNode("varDeclOrStmt", NULL,lookahead->line, lookahead->column);
     if (lookahead && strcmp(lookahead->tokenType, "LOCAL") == 0) {
         fprintf(derivation, "varDeclOrStmt → localVarDecl\n");
-        localVarDecl();
+        ASTNode* child_localVarDecl = localVarDecl();
+        if (child_localVarDecl) {
+          addChild(parent_varDeclOrStmt, child_localVarDecl);
+        }
     } else {
         fprintf(derivation, "varDeclOrStmt → statement\n");
         statement();
     }
+
+    return parent_varDeclOrStmt;
 }
 
 /* localVarDecl → 'local' varDecl */
-void localVarDecl() {
+ASTNode* localVarDecl() {
+    ASTNode* parent_localVarDecl = createASTNode("localVarDecl", NULL,lookahead->line, lookahead->column);
+
     fprintf(derivation, "localVarDecl -> 'local' varDecl\n");
     match("LOCAL");
-    varDecl();
+
+    // this is always local so hardcoded is done
+    parent_localVarDecl->value = "local";
+
+
+    ASTNode* child_varDecl = varDecl();
+    if (child_varDecl) {
+      addChild(parent_localVarDecl, child_varDecl);
+    }
+
+    return parent_localVarDecl;
 }
 
 // arraySizeList → arraySize arraySizeList | ε
@@ -519,17 +579,30 @@ ASTNode* type() {
 }
 
 /* funcHead → 'func' 'id' '(' fParams ')' => returnType | 'constructor' '(' fParams ') */
-void funcHead() {
+ASTNode* funcHead() {
+    ASTNode* parent = createASTNode("funcHead", NULL,lookahead->line, lookahead->column);
+
     if (lookahead && strcmp(lookahead->tokenType, "FUNC") == 0) {
         fprintf(derivation, "funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType\n");
-
         match("FUNC");
+        char* functionName = strdup(lookahead->lexeme);
         match("IDENTIFIER");
+
+        ASTNode* child_funcIdentifier = createASTNode("funcIdentifier", functionName ,lookahead->line, lookahead->column);
+        if(child_funcIdentifier) {
+          addChild(parent, child_funcIdentifier);
+        }
+
         match("LPAREN");
+
+
         fParams();
         match("RPAREN");
         match("ARROW");
-        returnType();
+        ASTNode* child_returnType = returnType();
+        if(child_returnType) {
+          addChild(parent, child_returnType);
+        }
     } else if (lookahead && strcmp(lookahead->tokenType, "CONSTRUCTOR") == 0) {
         fprintf(derivation, "funcHead -> 'constructor' '(' fParams ')'\n");
 
@@ -540,6 +613,7 @@ void funcHead() {
     } else {
         syntax_error("funcHead (func|constructor)");
     }
+    return parent;
 }
 
 
@@ -579,19 +653,29 @@ void fParamsTail() {
 }
 
 // returnType -> type | void
-void returnType() {
+ASTNode* returnType() {
+  ASTNode* parent = createASTNode("returnType", NULL,lookahead->line, lookahead->column);
+
     if (lookahead &&
         (strcmp(lookahead->tokenType, "INTEGER_TYPE") == 0 ||
          strcmp(lookahead->tokenType, "FLOAT_TYPE") == 0 ||
-         strcmp(lookahead->tokenType, "IDENTIFIER") == 0)) {
+         strcmp(lookahead->tokenType, "VARIABLE") == 0)) {
         fprintf(derivation, "returnType -> type\n");
-        match(lookahead->tokenType);
-    } else if (lookahead && strcmp(lookahead->tokenType, "VOID") == 0) {
-        fprintf(derivation, "returnType -> void\n");
-        match("VOID");
-    } else {
-        syntax_error("returnType (type|void)");
-    }
+        ASTNode* child_type =  type();
+
+        // can grab return type
+        char* return_type = child_type->value;
+        parent->value = return_type;
+
+
+         } else if (lookahead && strcmp(lookahead->tokenType, "VOID") == 0) {
+             fprintf(derivation, "returnType -> void\n");
+             parent->value = "void";
+             match("VOID");
+         } else {
+             syntax_error("returnType (type|void)");
+         }
+   return parent;
 }
 
 /*

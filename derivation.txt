@@ -6,27 +6,21 @@ visibility -> public
 memberDecl -> attributeDecl
 attributeDecl -> 'attribute' varDecl
 varDecl -> 'id' ':' type arraySizeList ';'
-type -> float
+type -> integer
 arraySizeList -> ε
+MemberList -> visibility memberDecl MemberList
+visibility -> private
+memberDecl -> funcDecl
+funcDecl -> funcHead ;
+funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
+fParams -> ε
+returnType -> type
+type -> integer
 MemberList -> ε
 classOrImplOrFunc -> classDecl
 classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
 MemberList -> visibility memberDecl MemberList
 visibility -> public
-memberDecl -> attributeDecl
-attributeDecl -> 'attribute' varDecl
-varDecl -> 'id' ':' type arraySizeList ';'
-type -> float
-arraySizeList -> ε
-MemberList -> visibility memberDecl MemberList
-visibility -> private
-memberDecl -> attributeDecl
-attributeDecl -> 'attribute' varDecl
-varDecl -> 'id' ':' type arraySizeList ';'
-type -> float
-arraySizeList -> ε
-MemberList -> visibility memberDecl MemberList
-visibility -> private
 memberDecl -> attributeDecl
 attributeDecl -> 'attribute' varDecl
 varDecl -> 'id' ':' type arraySizeList ';'

@@ -1,9 +1,12 @@
-// Simple Class Declarations
-class HelloWorld1 {
- };
+class Animal {
+    public attribute noOfLegs : integer;
+    private func bark() => integer;
+};
 
- class HelloWorld2 {
-  };
+class Car {
+    public attribute noOfLegs : integer;
+};
+
 
 
 

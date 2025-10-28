@@ -7,7 +7,7 @@ gcc -o parser src/parser/file_main.c src/parser/parser.c src/lexer/lex.yy.c
 gcc -o parser src/parser/parser.c src/lexer/lex.yy.c
 gcc -o parser src/parser/file_main.c src/parser/parser.c src/lexer/lex.yy.c src/parser/AST/ast.c
 gcc -o parser src/parser/file_main.c src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c src/parser/semantic_analysis.c
-gcc -o parser src/parser/file_main.c src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c src/parser/semantic_analysis.c
+gcc -o parser src/parser/file_main.c src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c
 
 // test program
 parser < src/testcase/source1.txt
