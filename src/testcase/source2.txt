@@ -6,7 +6,9 @@ class Beach {
     public attribute shore : float;
     private attribute mold : float;
     private attribute mold : integer;
-
-
 };
+
+
+
+
 

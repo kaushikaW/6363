@@ -1,12 +1,4 @@
-class Animal {
-    public attribute noOfLegs : integer;
-    private func bark() => integer;
-};
-
-class Car {
-    public attribute noOfLegs : integer;
-};
-
-
-
+func pain() => integer {
+    return (1+2);
+}
 

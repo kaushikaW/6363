@@ -63,29 +63,29 @@ ASTNode* varDeclOrStmt();
 
 ASTNode* localVarDecl();
 
-void statement();
+ASTNode* statement();
 
 void assignStat();
 
 void variable();
 
-void idOrSelf();
+ASTNode* idOrSelf();
 
 void indiceList();
 
 void indice();
 
-void expr();
+ASTNode*  expr();
 
-void arithExpr();
+ASTNode* arithExpr();
 
-void arithExpr_();
+ASTNode* arithExpr_();
 
-void term();
+ASTNode*  term();
 
-void factor();
+ASTNode* factor();
 
-void addOp();
+ASTNode* addOp();
 
 void idOrSelfTail();
 
@@ -95,7 +95,7 @@ void aParams();
 
 void idNestTail();
 
-void assignOp();
+ASTNode* assignOp();
 
 void term_();
 
@@ -115,11 +115,11 @@ void statBlock();
 
 void relExpr();
 
-void idOrSelfStatement();
+ASTNode* idOrSelfStatement();
 
 void arraySize();
 
-void idOrSelfTailWithAssignOrCall();
+ASTNode* idOrSelfTailWithAssignOrCall();
 
 void BaseIdTail();
 
