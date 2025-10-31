@@ -1,2 +1,0 @@
-Warning: Void function 'pain' should not return a value at line 6, col 5
-Type error: Cannot assign float to variable 'r' of type integer at line 5, col 5

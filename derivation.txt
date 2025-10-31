@@ -1,48 +1,33 @@
 prog -> classOrImplOrFuncList
-classOrImplOrFunc -> funcDef
+classOrImplOrFunc -> classDecl
+classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
+MemberList -> visibility memberDecl MemberList
+visibility -> public
+memberDecl -> funcDecl
+funcDecl -> funcHead ;
+funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
+fParams -> ε
+returnType -> type
+type -> integer
+MemberList -> ε
+classOrImplOrFunc -> implDef
+implDef -> 'implement' 'id' '{' FuncDefList '}'
+FuncDefList -> funcDef FuncDefList
 funcDef -> funcHead funcBody
 funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
 fParams -> ε
-returnType -> void
+returnType -> type
+type -> integer
 funcBody -> '{' varDeclOrStmtList '}'
-varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
-varDeclOrStmt → localVarDecl
-localVarDecl -> 'local' varDecl
-varDecl -> 'id' ':' type arraySizeList ';'
-type -> integer
-arraySizeList -> ε
-varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
-varDeclOrStmt → localVarDecl
-localVarDecl -> 'local' varDecl
-varDecl -> 'id' ':' type arraySizeList ';'
-type -> integer
-arraySizeList -> ε
-varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
-varDeclOrStmt → statement
-statement -> idOrSelfStatement ;
-idOrSelfStatement   → idOrSelf idOrSelfTailWithAssignOrCall
-idOrSelf -> id
-idOrSelfTailWithAssignOrCall -> assignOp expr
-assignOp -> := 
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'floatLit'
-term_ -> ε
-arithExpr_ -> ε
 varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
 varDeclOrStmt → statement
 statement -> 'return' '(' expr ')' ';'
 expr -> arithExpr
 arithExpr -> term arithExpr_
 term -> factor term_
-factor -> 'floatLit'
-term_ -> ε
-arithExpr_ -> addOp term arithExpr_
-addOp -> '+'
-term -> factor term_
 factor -> 'intLit'
 term_ -> ε
 arithExpr_ -> ε
 varDeclOrStmtList -> ε
+FuncDefList -> ε
 classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList

@@ -23,7 +23,7 @@ ASTNode* classOrImplOrFunc();
 
 ASTNode* classDecl();
 
-void implDef();
+ASTNode* implDef();
 
 void InheritanceOpt();
 
@@ -39,11 +39,11 @@ ASTNode* funcDecl();
 
 ASTNode* funcHead();
 
-void fParams();
+ASTNode* fParams();
 
-void fParamsTailList();
+ASTNode* fParamsTailList();
 
-void fParamsTail();
+ASTNode* fParamsTail();
 
 ASTNode* returnType();
 
@@ -103,7 +103,7 @@ void relOp();
 
 void multOp();
 
-void FuncDefList();
+ASTNode* FuncDefList();
 
 void aParamsTailList();
 

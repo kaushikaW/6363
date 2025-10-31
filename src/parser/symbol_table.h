@@ -4,6 +4,12 @@
 
 typedef enum { SYM_CLASS, SYM_FUNCTION, SYM_ATTRIBUTE, SYM_VARIABLE } SymbolKind;
 
+typedef struct Param {
+    char *name;
+    char *type;
+    struct Param *next;
+} Param;
+
 typedef struct Symbol {
     char *name;
     SymbolKind kind;
@@ -12,6 +18,8 @@ typedef struct Symbol {
     char *visibility;
     int line;
     int column;
+    int isDeclared;      // 1 if declared only, 0 if implemented
+    Param *params;       // linked list of parameters (for functions)
     struct Symbol *next;
 } Symbol;
 
@@ -26,30 +34,18 @@ typedef struct SymbolTable {
 SymbolTable* createSymbolTable(const char *scopeName);
 void insertSymbol(SymbolTable *table, const char *name, SymbolKind kind,
                   const char *type, const char *scope, const char *visibility,
-                  int line, int column);
+                  int line, int column, int isDeclared);
 void addNestedTable(SymbolTable *parent, SymbolTable *child);
 void printSymbolTable(SymbolTable *table);
 void freeSymbolTable(SymbolTable *table);
 Symbol* lookupSymbol(SymbolTable *table, const char *name, const char *scope);
 
-
-// symbol table genartion
-// --- Find child node by kind ---
+// symbol table generation
 ASTNode* findChild(ASTNode *node, const char *kind);
-
-// --- Handle attribute declarations ---
 void handleAttributeDecl(ASTNode *node, SymbolTable *currentTable, const char *scope, const char *visibility);
-
-// --- Handle function declarations ---
-void handleFuncDecl(ASTNode *node, SymbolTable *currentTable, const char *scope, const char *visibility);
-
-// --- Handle class declarations ---
+void handleFuncDecl(ASTNode *node, SymbolTable *currentTable, const char *scope, const char *visibility, int isDeclaration);
 void handleClassDecl(ASTNode *node, SymbolTable *currentTable);
-
-// --- Main symbol table builder ---
 void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scope, const char *visibility);
-
-
-
-
+void collectFuncParams(ASTNode *node, SymbolTable *funcTable, const char *funcName);
+void handleImplDef(ASTNode *node, SymbolTable *currentTable);
 #endif

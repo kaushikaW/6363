@@ -1,4 +1,5 @@
 // Implement Block with Function Definition
+
 class Dog {
 public func isBark() => integer;
 };
