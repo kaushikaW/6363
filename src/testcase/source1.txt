@@ -1,4 +1,8 @@
-func pain() => integer {
-    return (1+2);
+func pain() => void {
+    local r : integer;
+        local r : integer;
+
+    r := 5.2;
+    return(2.2+2);
 }
 

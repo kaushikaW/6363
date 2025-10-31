@@ -1,13 +1,9 @@
-class CAR {
-    public attribute age : float;
-};
+func price() => float {
+    local price : float;
+    price := 1;
 
-class Beach {
-    public attribute shore : float;
-    private attribute mold : float;
-    private attribute mold : integer;
-};
-
+    return (price);
+}
 
 
 

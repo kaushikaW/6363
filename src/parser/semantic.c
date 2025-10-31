@@ -6,13 +6,14 @@
 void analyzeSemantics(ASTNode *root, SymbolTable *currentTable, FILE *errorLog) {
     if (!root) return;
 
-    // Function definitions
+    // ---------------- Function Definitions ----------------
     if (strcmp(root->kind, "funcDef") == 0 || strcmp(root->kind, "funcDecl") == 0) {
         ASTNode *funcHead = findChild(root, "funcHead");
         if (!funcHead) return;
 
         ASTNode *funcId = findChild(funcHead, "funcIdentifier");
-        if (!funcId) return;
+        ASTNode *returnTypeNode = findChild(funcHead, "returnType");
+        const char *returnType = returnTypeNode ? returnTypeNode->value : "void";
 
         SymbolTable *funcTable = NULL;
         for (int i = 0; i < currentTable->childCount; i++) {
@@ -25,23 +26,30 @@ void analyzeSemantics(ASTNode *root, SymbolTable *currentTable, FILE *errorLog) 
         if (funcTable) {
             ASTNode *funcBody = findChild(root, "funcBody");
             if (funcBody) {
-                analyzeSemantics(funcBody, funcTable, errorLog);
+                //Check return types
+                checkReturnTypes(funcBody, funcTable, returnType, errorLog);
+
+                //Continue analyzing other semantics (assignments, nested functions, etc.)
+                for (int i = 0; i < funcBody->childCount; i++) {
+                    analyzeSemantics(funcBody->children[i], funcTable, errorLog);
+                }
             }
         }
         return;
     }
 
-    // Assignment statements
+    // ---------------- Assignment Statements ----------------
     if (strcmp(root->kind, "idOrSelfStatement") == 0) {
         checkAssignments(root, currentTable, errorLog);
         return;
     }
 
-    // Recurse for all children
+    // ---------------- Generic Recursion for All Children ----------------
     for (int i = 0; i < root->childCount; i++) {
         analyzeSemantics(root->children[i], currentTable, errorLog);
     }
 }
+
 
 // ---------------- Type Checking ----------------
 void checkAssignments(ASTNode *node, SymbolTable *currentTable, FILE *errorLog) {
@@ -76,6 +84,52 @@ void checkAssignments(ASTNode *node, SymbolTable *currentTable, FILE *errorLog) 
         }
     }
 }
+
+// ---------------- Function Return Type Check ----------------
+void checkReturnTypes(ASTNode *node, SymbolTable *funcTable, const char *expectedType, FILE *errorLog) {
+    if (!node) return;
+
+    // ---------------- Handle return statements ----------------
+    if (strcmp(node->kind, "return") == 0) {
+        ASTNode *expr = findChild(node, "expr");
+        const char *actualType = expr ? getExprType(expr, funcTable) : NULL;
+
+        if (strcmp(expectedType, "void") == 0) {
+            // Void function should NOT return a value
+            if (actualType) {
+                fprintf(stderr, "Warning: Void function '%s' should not return a value at line %d, col %d\n",
+                        funcTable->scopeName, node->line, node->column);
+                if (errorLog)
+                    fprintf(errorLog, "Warning: Void function '%s' should not return a value at line %d, col %d\n",
+                            funcTable->scopeName, node->line, node->column);
+            }
+        } else {
+            // Non-void function must return the expected type
+            if (!actualType) {
+                fprintf(stderr, "Semantic error: Function '%s' must return a value of type '%s' at line %d, col %d\n",
+                        funcTable->scopeName, expectedType, node->line, node->column);
+                if (errorLog)
+                    fprintf(errorLog, "Semantic error: Function '%s' must return a value of type '%s' at line %d, col %d\n",
+                            funcTable->scopeName, expectedType, node->line, node->column);
+            } else if (strcmp(actualType, expectedType) != 0) {
+                fprintf(stderr, "Semantic error: Return type mismatch in function '%s'. Expected '%s' but got '%s' at line %d, col %d\n",
+                        funcTable->scopeName, expectedType, actualType, node->line, node->column);
+                if (errorLog)
+                    fprintf(errorLog, "Semantic error: Return type mismatch in function '%s'. Expected '%s' but got '%s' at line %d, col %d\n",
+                            funcTable->scopeName, expectedType, actualType, node->line, node->column);
+            }
+        }
+
+        return;
+    }
+
+    // ---------------- Recurse for all children ----------------
+    for (int i = 0; i < node->childCount; i++) {
+        checkReturnTypes(node->children[i], funcTable, expectedType, errorLog);
+    }
+}
+
+
 
 // ---------------- Expression Type Inference ----------------
 const char* getExprType(ASTNode *expr, SymbolTable *currentTable) {
