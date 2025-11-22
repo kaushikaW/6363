@@ -1,8 +1,6 @@
 func price() => float {
-    local price : float;
-    price := 1;
-
-    return (price);
+    age := 5;
+    a();
 }
 
 

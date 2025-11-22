@@ -1,7 +1,7 @@
 cd/src/lexer
 flex -o src/lexer/lexer.l
 flex -o lexer.l
-gcc -o parser src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c src/parser/semantic.c
+gcc -o parser src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c src/parser/semantic.c  src/parser/semantic_error.c
 
 
 // test program

@@ -1,33 +1,21 @@
 prog -> classOrImplOrFuncList
-classOrImplOrFunc -> classDecl
-classDecl -> 'class' 'id' InheritanceOpt '{' MemberList '}' ';'
-MemberList -> visibility memberDecl MemberList
-visibility -> public
-memberDecl -> funcDecl
-funcDecl -> funcHead ;
-funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
-fParams -> ε
-returnType -> type
-type -> integer
-MemberList -> ε
-classOrImplOrFunc -> implDef
-implDef -> 'implement' 'id' '{' FuncDefList '}'
-FuncDefList -> funcDef FuncDefList
+classOrImplOrFunc -> funcDef
 funcDef -> funcHead funcBody
 funcHead -> 'func' 'id' '(' fParams ')' '=>' returnType
 fParams -> ε
-returnType -> type
-type -> integer
+returnType -> void
 funcBody -> '{' varDeclOrStmtList '}'
 varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
-varDeclOrStmt → statement
-statement -> 'return' '(' expr ')' ';'
-expr -> arithExpr
-arithExpr -> term arithExpr_
-term -> factor term_
-factor -> 'intLit'
-term_ -> ε
-arithExpr_ -> ε
+varDeclOrStmt → localVarDecl
+localVarDecl -> 'local' varDecl
+varDecl -> 'id' ':' type arraySizeList ';'
+type -> integer
+arraySizeList -> ε
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → localVarDecl
+localVarDecl -> 'local' varDecl
+varDecl -> 'id' ':' type arraySizeList ';'
+type -> integer
+arraySizeList -> ε
 varDeclOrStmtList -> ε
-FuncDefList -> ε
 classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList

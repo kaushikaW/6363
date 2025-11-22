@@ -19,4 +19,13 @@ void checkReturnStatements(ASTNode *funcDefNode, const char *declaredReturnType,
 
 void checkReturnTypes(ASTNode *node, SymbolTable *funcTable, const char *expectedType, FILE *errorLog);
 
+int isFunctionDeclared(SymbolTable *classTable, const char *funcName);
+
+void handleImplDef(ASTNode *node, SymbolTable *currentTable, FILE *errorLog);
+
+void checkFunctionCalls(ASTNode *node, SymbolTable *currentTable, FILE *errorLog);
+
+Symbol* lookupFunctionBeforeUse(SymbolTable *table, const char *name, int currentLine);
+
+Symbol* lookupSymbolRecursive(SymbolTable *table, const char *name, const char *scope);
 #endif // SEMANTIC_H

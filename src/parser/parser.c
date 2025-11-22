@@ -14,6 +14,8 @@
 
 #include "semantic.h"
 
+#include "semantic_error.h"
+
 
 extern Token * yylex();
 
@@ -326,7 +328,15 @@ ASTNode* implDef() {
   ASTNode * parent_implDef = createASTNode("implDef", NULL,lookahead -> line, lookahead -> column);
   fprintf(derivation, "implDef -> 'implement' 'id' '{' FuncDefList '}'\n");
   match("IMPLEMENT");
+  char * className = strdup(lookahead -> lexeme);
+
   match("IDENTIFIER"); // the class name
+
+  ASTNode* child_impl_class_identifier = createASTNode("ClassIdentifier",className,lookahead -> line, lookahead -> column);
+  if (child_impl_class_identifier) {
+    addChild(parent_implDef, child_impl_class_identifier);
+  }
+
   match("LBRACE");
   ASTNode* child_FuncDefList = FuncDefList(); // <-- call FuncDefList, not just funcDef
   if (child_FuncDefList) {
@@ -742,7 +752,6 @@ ASTNode * returnType() {
   } else if (lookahead && strcmp(lookahead -> tokenType, "VOID") == 0) {
     fprintf(derivation, "returnType -> void\n");
     parent -> value = "void";
-    match("VOID");
     match("VOID");
   } else {
     syntax_error("returnType (type|void)");
@@ -1359,6 +1368,8 @@ int main() {
 
   // Semantic analysis with type checking and error reporting
   analyzeSemantics(root, globalTable, semanticErrorLog);
+
+  printSemanticErrors();
 
   fclose(semanticErrorLog);
   freeSymbolTable(globalTable);

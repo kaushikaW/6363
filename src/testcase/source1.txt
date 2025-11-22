@@ -1,9 +1,6 @@
-class Dog {
-public func isBark() => integer;
-};
 
-implement Dog {
-    func isBark() => integer {
-	return(1);
-    }
+func greet() => void {
+      local a : integer;
+      local a : integer;
+
 }

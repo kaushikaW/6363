@@ -1,7 +1,11 @@
+// symbol_table.c
+
+
 #include "symbol_table.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "semantic_error.h"
 
 // ---------------- Symbol Table Basic Functions ----------------
 
@@ -19,8 +23,8 @@ void insertSymbol(SymbolTable *table, const char *name, SymbolKind kind,
                   int line, int column, int isDeclared) {
     Symbol *existing = lookupSymbol(table, name, scope);
     if (existing) {
-        fprintf(stderr, "Semantic error: Duplicate declaration of '%s' at line %d, col %d\n",
-                name, line, column);
+        addSemanticError(line, column, "Scope Error",
+                         "Duplicate declaration of '%s' in scope '%s'", name, scope);
         return;
     }
 
@@ -210,7 +214,8 @@ void collectFuncParams(ASTNode *node, SymbolTable *funcTable, const char *funcNa
         collectFuncParams(node->children[i], funcTable, funcName);
 }
 
-void handleFuncDecl(ASTNode *node, SymbolTable *currentTable, const char *scope, const char *visibility, int isDeclaration) {
+void handleFuncDecl(ASTNode *node, SymbolTable *currentTable,
+                    const char *scope, const char *visibility, int isDeclaration) {
     ASTNode *funcHead = findChild(node, "funcHead");
     if (!funcHead) return;
 
@@ -221,33 +226,49 @@ void handleFuncDecl(ASTNode *node, SymbolTable *currentTable, const char *scope,
     const char *funcName = funcIdentifier->value;
     const char *returnType = returnTypeNode ? returnTypeNode->value : "void";
 
-    // Check if function exists already in class (for declaration vs implementation)
+    // Lookup if function already exists
     Symbol *existing = lookupSymbol(currentTable, funcName, scope);
-    if (existing && isDeclaration && existing->isDeclared == 0) {
-        fprintf(stderr, "Semantic error: Function '%s' already implemented\n", funcName);
-        return;
-    }
+    SymbolTable *funcTable = NULL;
 
     if (!existing) {
+        // Not declared yet, insert symbol
         insertSymbol(currentTable, funcName, SYM_FUNCTION, returnType,
-                     scope ? scope : "GLOBAL", visibility, funcIdentifier->line, funcIdentifier->column, isDeclaration);
-    } else if (!isDeclaration) {
-        existing->isDeclared = 0; // mark as implemented
+                     scope ? scope : "GLOBAL", visibility,
+                     funcIdentifier->line, funcIdentifier->column, isDeclaration);
+
+        // Create nested table for this function
+        funcTable = createSymbolTable(funcName);
+        addNestedTable(currentTable, funcTable);
+    } else {
+        // Function already exists
+        if (!isDeclaration) existing->isDeclared = 0;  // mark as implemented
+
+        // Reuse existing function table
+        for (int i = 0; i < currentTable->childCount; i++) {
+            if (strcmp(currentTable->children[i]->scopeName, funcName) == 0) {
+                funcTable = currentTable->children[i];
+                break;
+            }
+        }
+        if (!funcTable) { // fallback
+            funcTable = createSymbolTable(funcName);
+            addNestedTable(currentTable, funcTable);
+        }
     }
 
-    SymbolTable *funcTable = createSymbolTable(funcName);
-    addNestedTable(currentTable, funcTable);
-
+    // Collect parameters
     ASTNode *fParams = findChild(funcHead, "fParams");
-    if (fParams)
-        collectFuncParams(fParams, funcTable, funcName);
+    if (fParams) collectFuncParams(fParams, funcTable, funcName);
 
+    // Collect local variables from body
     ASTNode *funcBody = findChild(node, "funcBody");
     if (funcBody) {
         for (int i = 0; i < funcBody->childCount; i++)
             collectLocals(funcBody->children[i], funcTable, funcName);
     }
 }
+
+
 
 void handleClassDecl(ASTNode *node, SymbolTable *currentTable) {
     ASTNode *classIdNode = findChild(node, "ClassIdentifier");
@@ -279,12 +300,50 @@ void handleClassDecl(ASTNode *node, SymbolTable *currentTable) {
     }
 }
 
+void handleImplDef(ASTNode *node, SymbolTable *currentTable) {
+    ASTNode *classIdNode = findChild(node, "ClassIdentifier");
+    if (!classIdNode) return;
+    const char *className = classIdNode->value;
+
+    // Find class symbol table
+    SymbolTable *classTable = NULL;
+    for (int i = 0; i < currentTable->childCount; i++) {
+        if (strcmp(currentTable->children[i]->scopeName, className) == 0) {
+            classTable = currentTable->children[i];
+            break;
+        }
+    }
+    if (!classTable) {
+        fprintf(stderr, "Semantic error: Implementation for unknown class '%s'\n", className);
+        return;
+    }
+
+    // Traverse all FuncDefList and FuncDefListWrapper nodes
+    for (int i = 0; i < node->childCount; i++) {
+        ASTNode *child = node->children[i];
+        if (strcmp(child->kind, "FuncDefList") == 0 ||
+            strcmp(child->kind, "FuncDefListWrapper") == 0) {
+            for (int j = 0; j < child->childCount; j++) {
+                ASTNode *funcNode = child->children[j];
+                if (strcmp(funcNode->kind, "funcDef") == 0) {
+                    handleFuncDecl(funcNode, classTable, className, "public", 0);
+                }
+            }
+        }
+    }
+}
+
 
 void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scope, const char *visibility) {
     if (!root) return;
 
     if (strcmp(root->kind, "classDecl") == 0) {
         handleClassDecl(root, currentTable);
+        return;
+    }
+
+    if (strcmp(root->kind, "implDef") == 0) {
+        handleImplDef(root, currentTable);
         return;
     }
 
@@ -319,3 +378,4 @@ void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scop
     for (int i = 0; i < root->childCount; i++)
         buildSymbolTable(root->children[i], currentTable, scope, visibility);
 }
+

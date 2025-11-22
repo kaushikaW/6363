@@ -47,5 +47,8 @@ void handleFuncDecl(ASTNode *node, SymbolTable *currentTable, const char *scope,
 void handleClassDecl(ASTNode *node, SymbolTable *currentTable);
 void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scope, const char *visibility);
 void collectFuncParams(ASTNode *node, SymbolTable *funcTable, const char *funcName);
-void handleImplDef(ASTNode *node, SymbolTable *currentTable);
+Symbol* lookupSymbolRecursive(SymbolTable *table, const char *name, const char *scope);
+void handleFunctionDeclaration(ASTNode *node, SymbolTable *currentTable, FILE *errorLog);
+Symbol* lookupSymbolRecursive(SymbolTable *table, const char *name, const char *scope);
+
 #endif

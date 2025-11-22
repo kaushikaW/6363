@@ -1,10 +1,42 @@
+// semantic.c
+
 #include "semantic.h"
 #include <stdio.h>
 #include <string.h>
+#include "semantic_error.h"
 
 // ---------------- Entry Point ----------------
 void analyzeSemantics(ASTNode *root, SymbolTable *currentTable, FILE *errorLog) {
     if (!root) return;
+
+    // ---------------- Handle Class Implementations ----------------
+    if (strcmp(root->kind, "implDef") == 0) {
+        ASTNode *classId = findChild(root, "ClassIdentifier");
+        if (!classId) return;
+
+        // Find the class symbol table
+        SymbolTable *classTable = NULL;
+        for (int i = 0; i < currentTable->childCount; i++) {
+            if (strcmp(currentTable->children[i]->scopeName, classId->value) == 0) {
+                classTable = currentTable->children[i];
+                break;
+            }
+        }
+
+        if (!classTable) return;
+
+        // Process all function definitions inside the implementation
+        ASTNode *funcList = findChild(root, "FuncDefList");
+        if (funcList) {
+            for (int i = 0; i < funcList->childCount; i++) {
+                ASTNode *funcDef = funcList->children[i];
+                if (strcmp(funcDef->kind, "funcDef") == 0) {
+                    analyzeSemantics(funcDef, classTable, errorLog);
+                }
+            }
+        }
+        return;
+    }
 
     // ---------------- Function Definitions ----------------
     if (strcmp(root->kind, "funcDef") == 0 || strcmp(root->kind, "funcDecl") == 0) {
@@ -15,6 +47,7 @@ void analyzeSemantics(ASTNode *root, SymbolTable *currentTable, FILE *errorLog) 
         ASTNode *returnTypeNode = findChild(funcHead, "returnType");
         const char *returnType = returnTypeNode ? returnTypeNode->value : "void";
 
+        // Find the correct function scope table
         SymbolTable *funcTable = NULL;
         for (int i = 0; i < currentTable->childCount; i++) {
             if (strcmp(currentTable->children[i]->scopeName, funcId->value) == 0) {
@@ -26,10 +59,10 @@ void analyzeSemantics(ASTNode *root, SymbolTable *currentTable, FILE *errorLog) 
         if (funcTable) {
             ASTNode *funcBody = findChild(root, "funcBody");
             if (funcBody) {
-                //Check return types
+                // Check return types
                 checkReturnTypes(funcBody, funcTable, returnType, errorLog);
 
-                //Continue analyzing other semantics (assignments, nested functions, etc.)
+                // Continue analyzing inside function body
                 for (int i = 0; i < funcBody->childCount; i++) {
                     analyzeSemantics(funcBody->children[i], funcTable, errorLog);
                 }
@@ -41,14 +74,15 @@ void analyzeSemantics(ASTNode *root, SymbolTable *currentTable, FILE *errorLog) 
     // ---------------- Assignment Statements ----------------
     if (strcmp(root->kind, "idOrSelfStatement") == 0) {
         checkAssignments(root, currentTable, errorLog);
-        return;
+            return;
     }
 
-    // ---------------- Generic Recursion for All Children ----------------
+    // ---------------- Recurse through all children ----------------
     for (int i = 0; i < root->childCount; i++) {
         analyzeSemantics(root->children[i], currentTable, errorLog);
     }
 }
+
 
 
 // ---------------- Type Checking ----------------
@@ -131,6 +165,46 @@ void checkReturnTypes(ASTNode *node, SymbolTable *funcTable, const char *expecte
 
 
 
+
+
+//// ---------------- Function Call Check ----------------
+//void checkFunctionCalls(ASTNode *node, SymbolTable *currentTable, FILE *errorLog) {
+//    if (!node) return;
+//
+//    ASTNode *calleeNode = findChild(node, "idOrSelf");
+//    ASTNode *tailNode = findChild(node, "idOrSelfTailWithAssignOrCall");
+//    if (!calleeNode || !tailNode) return;
+//
+//    // Detect function call: tail node contains a "call" or empty for simplicity
+//    int isCall = tailNode->childCount > 0 && strcmp(tailNode->children[0]->kind, "call") == 0;
+//    if (!isCall) return;
+//
+//    const char *funcName = calleeNode->value;
+//
+//    // Lookup function recursively in symbol table
+//    Symbol *sym = lookupSymbolRecursive(currentTable, funcName, NULL);
+//
+//    // If function symbol not found or not a function → semantic error
+//    if (!sym || sym->kind != SYM_FUNCTION) {
+//        fprintf(stderr, "Semantic error: Function '%s' used before declaration at line %d, col %d\n",
+//                funcName, calleeNode->line, calleeNode->column);
+//        if (errorLog)
+//            fprintf(errorLog, "Semantic error: Function '%s' used before declaration at line %d, col %d\n",
+//                    funcName, calleeNode->line, calleeNode->column);
+//    }
+//}
+
+
+
+
+
+
+
+
+
+
+
+
 // ---------------- Expression Type Inference ----------------
 const char* getExprType(ASTNode *expr, SymbolTable *currentTable) {
     if (!expr || expr->childCount == 0) return NULL;
@@ -171,3 +245,5 @@ const char* getExprType(ASTNode *expr, SymbolTable *currentTable) {
     // Recursively check children
     return getExprType(first, currentTable);
 }
+
+
