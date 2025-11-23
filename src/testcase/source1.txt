@@ -1,6 +1,6 @@
 
-func greet() => void {
-      local a : integer;
-      local a : integer;
-
+func main() => void {
+     local num1 : integer;
+     local num2 : integer;
+     local num3 : integer;
 }

@@ -17,5 +17,11 @@ localVarDecl -> 'local' varDecl
 varDecl -> 'id' ':' type arraySizeList ';'
 type -> integer
 arraySizeList -> ε
+varDeclOrStmtList -> varDeclOrStmt varDeclOrStmtList
+varDeclOrStmt → localVarDecl
+localVarDecl -> 'local' varDecl
+varDecl -> 'id' ':' type arraySizeList ';'
+type -> integer
+arraySizeList -> ε
 varDeclOrStmtList -> ε
 classOrImplOrFuncList -> classOrImplOrFunc classOrImplOrFuncList

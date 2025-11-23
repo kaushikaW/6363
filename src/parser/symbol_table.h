@@ -20,6 +20,7 @@ typedef struct Symbol {
     int column;
     int isDeclared;      // 1 if declared only, 0 if implemented
     Param *params;       // linked list of parameters (for functions)
+    int offset;
     struct Symbol *next;
 } Symbol;
 
@@ -50,5 +51,5 @@ void collectFuncParams(ASTNode *node, SymbolTable *funcTable, const char *funcNa
 Symbol* lookupSymbolRecursive(SymbolTable *table, const char *name, const char *scope);
 void handleFunctionDeclaration(ASTNode *node, SymbolTable *currentTable, FILE *errorLog);
 Symbol* lookupSymbolRecursive(SymbolTable *table, const char *name, const char *scope);
-
+void assignOffsets(SymbolTable *funcTable);
 #endif

@@ -38,9 +38,20 @@ void insertSymbol(SymbolTable *table, const char *name, SymbolKind kind,
     sym->column = column;
     sym->isDeclared = isDeclared;
     sym->params = NULL;
-    sym->next = table->head;
-    table->head = sym;
+    sym->next = NULL;  // Important: tail insertion
+
+    // Insert at tail
+    if (!table->head) {
+        table->head = sym;
+    } else {
+        Symbol *cur = table->head;
+        while (cur->next) {
+            cur = cur->next;
+        }
+        cur->next = sym;
+    }
 }
+
 
 void addNestedTable(SymbolTable *parent, SymbolTable *child) {
     parent->children = realloc(parent->children, sizeof(SymbolTable*) * (parent->childCount + 1));
@@ -61,9 +72,9 @@ void printSymbolTable(SymbolTable *table) {
     if (!table) return;
 
     printf("\n===== SYMBOL TABLE for scope: %s =====\n", table->scopeName);
-    printf("| %-12s | %-12s | %-12s | %-12s | %-10s | %-5s | %-5s | %-10s |\n",
-           "Name", "Kind", "Type", "Scope", "Visibility", "Line", "Col", "Declared?");
-    printf("|--------------|--------------|--------------|--------------|------------|-------|-------|------------|\n");
+    printf("| %-12s | %-12s | %-12s | %-12s | %-10s | %-5s | %-5s | %-10s | %-6s |\n",
+           "Name", "Kind", "Type", "Scope", "Visibility", "Line", "Col", "Declared?", "Offset");
+    printf("|--------------|--------------|--------------|--------------|------------|-------|-------|------------|--------|\n");
 
     for (Symbol *s = table->head; s; s = s->next) {
         const char *kindStr =
@@ -71,7 +82,7 @@ void printSymbolTable(SymbolTable *table) {
             (s->kind == SYM_FUNCTION) ? "Function" :
             (s->kind == SYM_ATTRIBUTE) ? "Attribute" : "Variable";
 
-        printf("| %-12s | %-12s | %-12s | %-12s | %-10s | %-5d | %-5d | %-10s |\n",
+        printf("| %-12s | %-12s | %-12s | %-12s | %-10s | %-5d | %-5d | %-10s | %-6d |\n",
                s->name,
                kindStr,
                s->type ? s->type : "-",
@@ -79,7 +90,8 @@ void printSymbolTable(SymbolTable *table) {
                s->visibility ? s->visibility : "-",
                s->line,
                s->column,
-               (s->kind == SYM_FUNCTION) ? (s->isDeclared ? "Yes" : "No") : "-");
+               (s->kind == SYM_FUNCTION) ? (s->isDeclared ? "Yes" : "No") : "-",
+               s->offset);
     }
 
     for (int i = 0; i < table->childCount; i++) {
@@ -314,7 +326,8 @@ void handleImplDef(ASTNode *node, SymbolTable *currentTable) {
         }
     }
     if (!classTable) {
-        fprintf(stderr, "Semantic error: Implementation for unknown class '%s'\n", className);
+        addSemanticError(node->line, node->column, "Scope Error",
+                         "Implementation for unknown class '%s'", className, NULL);
         return;
     }
 
@@ -377,5 +390,26 @@ void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scop
 
     for (int i = 0; i < root->childCount; i++)
         buildSymbolTable(root->children[i], currentTable, scope, visibility);
+}
+
+
+void assignOffsets(SymbolTable *funcTable) {
+    if (!funcTable) return;
+
+    int currentOffset = 0; // start at 0 for first local variable
+
+    // iterate over symbols in the table
+    for (Symbol *s = funcTable->head; s; s = s->next) {
+        if (s->kind == SYM_VARIABLE) {
+            int size = 4; //4 bytes for integer
+            s->offset = currentOffset;
+            currentOffset -= size; // stack grows downward
+        }
+    }
+
+    // Recursively assign offsets to nested tables (for functions inside classes)
+    for (int i = 0; i < funcTable->childCount; i++) {
+        assignOffsets(funcTable->children[i]);
+    }
 }
 

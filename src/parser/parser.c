@@ -1354,6 +1354,8 @@ int main() {
   // Create global table and build nested symbol tables
   SymbolTable * globalTable = createSymbolTable("GLOBAL");
   buildSymbolTable(root, globalTable, "GLOBAL", NULL);
+  assignOffsets(globalTable);
+
 
   printSymbolTable(globalTable);
 
@@ -1367,7 +1369,7 @@ int main() {
   }
 
   // Semantic analysis with type checking and error reporting
-  analyzeSemantics(root, globalTable, semanticErrorLog);
+  analyzeSemantics(root, globalTable);
 
   printSemanticErrors();
 
