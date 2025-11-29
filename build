@@ -1,8 +1,30 @@
 cd/src/lexer
 flex -o src/lexer/lexer.l
 flex -o lexer.l
+
 gcc -o parser src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c src/parser/semantic.c  src/parser/semantic_error.c
 
+gcc -o parser src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c src/parser/semantic.c  src/parser/semantic_error.c src/parser/3AC.c
+
+gcc -o parser src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c src/parser/semantic.c  src/parser/semantic_error.c src/parser/three_address_code.c
+
+gcc -o parser src/parser/parser.c src/lexer/lex.yy.c src/parser/symbol_table.c src/parser/semantic.c  src/parser/semantic_error.c src/parser/helperparser.c
+
+
+
+gcc -o parser src/parser/parser.c src/lexer/lex.yy.c src/lexer2/lex.n.c src/parser/symbol_table.c src/parser/semantic.c  src/parser/semantic_error.c src/parser/helperparser.c
+
+
+gcc -o parser2 src/parser/helperparser.c src/lexer/lex.yy.c
+parser2 < src/testcase/source1.txt
+
+gcc -o parser2 src/parser/helperparser/helperparser.c src/parser/helperparser/symbol_table.c src/lexer/lex.yy.c
+parser2 < src/testcase/source1.txt
+
+gcc -o parser2 src/parser/helperparser/helperparser.c src/parser/helperparser/symbol_table.c src/lexer/lex.yy.c src/parser/helperparser/codegen.c
+
+parser < src/testcase/source1.txt
+parser2 < src/testcase/source1.txt
 
 // test program
 parser < src/testcase/source1.txt

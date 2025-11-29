@@ -16,6 +16,10 @@
 
 #include "semantic_error.h"
 
+#include "helperparser.h"
+
+
+
 
 extern Token * yylex();
 
@@ -1329,6 +1333,8 @@ void statBlock() {
   }
 }
 int main() {
+
+
   // Open derivation file
   derivation = fopen("derivation.txt", "w");
   if (!derivation) {
@@ -1372,6 +1378,7 @@ int main() {
   analyzeSemantics(root, globalTable);
 
   printSemanticErrors();
+
 
   fclose(semanticErrorLog);
   freeSymbolTable(globalTable);
