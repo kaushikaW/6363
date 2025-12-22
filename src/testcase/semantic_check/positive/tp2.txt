@@ -1,0 +1,13 @@
+
+class Car {
+   public func printDetails() => integer;
+};
+
+implement Car {
+// function definition/implementation
+
+ func printDetails() => integer {
+  return (1);
+ }
+
+}

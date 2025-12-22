@@ -1,0 +1,6 @@
+// Type mismatch in assignment
+
+func testfuc() => float {
+     local x: integer;
+     x := 5.6;
+}

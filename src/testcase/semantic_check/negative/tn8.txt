@@ -1,0 +1,8 @@
+// void function returning a value
+
+func testfuc1() => void {
+     local x: float;
+     x:= 5.5;
+     return(x);
+}
+

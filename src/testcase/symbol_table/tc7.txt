@@ -1,0 +1,10 @@
+// Attribute insertion
+
+// Attribute insertion to symbol table from class and correct track of visibility
+
+class Car {
+ public attribute rank : integer;
+ private attribute marks : integer;
+};
+
+

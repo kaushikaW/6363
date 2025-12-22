@@ -1,0 +1,9 @@
+// duplicate variable declaration in same scope
+
+func main() => float {
+
+     local x: integer;
+     local x: integer;
+
+
+}

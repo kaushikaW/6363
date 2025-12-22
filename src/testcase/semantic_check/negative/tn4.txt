@@ -1,0 +1,11 @@
+// Duplicate class declaration
+
+class Dog {
+public func isBark() => integer;
+
+};
+
+class Dog {
+public func isBark() => integer;
+
+};

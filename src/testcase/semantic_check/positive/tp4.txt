@@ -1,0 +1,7 @@
+// Normal class declaration
+
+class Dog {
+public func isBark() => integer;
+
+};
+

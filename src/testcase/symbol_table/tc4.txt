@@ -1,0 +1,9 @@
+// Nested Scope Creation
+
+// function creates child symbol table
+
+func go() => void {
+
+}
+
+

@@ -1,0 +1,9 @@
+// Attribute insertion
+
+// Attribute insertion to symbol table from class
+
+class Car {
+ public attribute rank : integer;
+};
+
+

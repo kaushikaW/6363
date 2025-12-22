@@ -1,0 +1,9 @@
+// variable declared before use
+
+func main() => float {
+     local x: integer;
+     local y: integer;
+
+     x := 10;
+
+}

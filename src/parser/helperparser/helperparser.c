@@ -111,7 +111,9 @@ ASTNode_n* term_n();
 ASTNode_n* factor_n();
 ASTNode_n* if_statement_n();
 ASTNode_n* condition_n();
-
+ASTNode_n* while_statement_n();
+ASTNode_n* condition_n();
+ASTNode_n* write_statement_n();
 
 // ---------------- Parser Rules ----------------
 // program ::= func main() => void { statement_list }
@@ -137,7 +139,9 @@ ASTNode_n* statement_list_n() {
     while (lookahead &&
     (strcmp(lookahead->tokenType, "LOCAL") == 0 ||
      strcmp(lookahead->tokenType, "IDENTIFIER") == 0 ||
-     strcmp(lookahead->tokenType, "IF") == 0))
+     strcmp(lookahead->tokenType, "IF") == 0 ||
+     strcmp(lookahead->tokenType, "WRITE") == 0 ||
+     strcmp(lookahead->tokenType, "WHILE") == 0))
 {
         ASTNode_n* stmt = statement_n();
         if (stmt) addChild_n(node, stmt);
@@ -146,7 +150,7 @@ ASTNode_n* statement_list_n() {
     return node;
 }
 
-// statement ::= var_decl | assignment
+// statement ::= var_decl | assignment | write
 ASTNode_n* statement_n() {
     if (strcmp(lookahead->tokenType, "LOCAL") == 0)
         return var_decl_n();
@@ -157,11 +161,30 @@ ASTNode_n* statement_n() {
     if (strcmp(lookahead->tokenType, "IF") == 0)
         return if_statement_n();
 
+    if (strcmp(lookahead->tokenType, "WHILE") == 0)
+        return while_statement_n();
+
+    if (strcmp(lookahead->tokenType, "WRITE") == 0)
+        return write_statement_n(); // NEW
+
     syntax_error_n("statement");
     return NULL;
 }
 
-ASTNode_n* condition_n();
+// write_statement ::= WRITE ( expression | IDENT )
+ASTNode_n* write_statement_n() {
+    ASTNode_n* node = createASTNode_n("write", NULL, lookahead->line, lookahead->column);
+    match_n("WRITE");
+    match_n("LPAREN");
+
+    ASTNode_n* arg = expression_n(); // handles INTEGER or IDENT or more complex expressions
+    addChild_n(node, arg);
+
+    match_n("RPAREN");
+    return node;
+}
+
+
 
 ASTNode_n* if_statement_n() {
     ASTNode_n* node = createASTNode_n("if_statement", NULL, lookahead->line, lookahead->column);
@@ -273,6 +296,24 @@ ASTNode_n* condition_n() {
     return op;
 }
 
+ASTNode_n* while_statement_n() {
+    ASTNode_n* node = createASTNode_n("while_statement", NULL, lookahead->line, lookahead->column);
+
+    match_n("WHILE");
+    match_n("LPAREN");
+
+    ASTNode_n* cond = condition_n();
+    addChild_n(node, cond);
+
+    match_n("RPAREN");
+
+    match_n("LBRACE");
+    ASTNode_n* body = statement_list_n();
+    addChild_n(node, body);
+    match_n("RBRACE");
+
+    return node;
+}
 
 
 // factor ::= INTEGER | IDENT | ( expression )
@@ -310,6 +351,13 @@ ASTNode_n* factor_n() {
 
 
 // ---------------- 3AC Generation ----------------
+int labelCount = 0;
+
+char* newLabel() {
+    static char buffer[20];
+    sprintf(buffer, "L%d", labelCount++);
+    return strdup(buffer);
+}
 
 void addQuad(char *op, char *arg1, char *arg2, char *result) {
     quadCount++;
@@ -325,53 +373,129 @@ void addQuad(char *op, char *arg1, char *arg2, char *result) {
 char* generate3AC(ASTNode_n* node, char* currentScope) {
     if (!node) return NULL;
 
-    // Leaf nodes
-    if (strcmp(node->kind, "INTEGER") == 0 || strcmp(node->kind, "IDENTIFIER") == 0) {
+    /* ---------- Leaf nodes ---------- */
+    if (strcmp(node->kind, "INTEGER") == 0 ||
+        strcmp(node->kind, "IDENTIFIER") == 0) {
         return strdup(node->value);
     }
 
-    // Binary operators
-    if (strcmp(node->kind, "PLUS") == 0 ||
-        strcmp(node->kind, "MINUS") == 0 ||
-        strcmp(node->kind, "TIMES") == 0 ||
-        strcmp(node->kind, "DIVIDE") == 0) {
+    /* ---------- Arithmetic ---------- */
+    if (!strcmp(node->kind, "PLUS") ||
+        !strcmp(node->kind, "MINUS") ||
+        !strcmp(node->kind, "TIMES") ||
+        !strcmp(node->kind, "DIVIDE")) {
 
         char* left = generate3AC(node->children[0], currentScope);
         char* right = generate3AC(node->children[1], currentScope);
         char* temp = newTemp();
 
-        // Remove adding temp to symbol table
-        // addSymbol(temp, "integer", currentScope);  <-- removed
-
-        // Add quadruple
-        addQuad(node->value, left, right, temp);
-
+        // Normal 3AC
         printf("%s = %s %s %s\n", temp, left, node->value, right);
+
+        // Quadruple
+        addQuad(node->value, left, right, temp);
 
         free(left);
         free(right);
-
         return temp;
     }
 
-    // Assignment
-    if (strcmp(node->kind, "assignment") == 0) {
+    /* ---------- Assignment ---------- */
+    if (!strcmp(node->kind, "assignment")) {
         char* rhs = generate3AC(node->children[0], currentScope);
 
-        // Add quadruple
+        // Normal 3AC
+        printf("%s = %s\n", node->value, rhs);
+
+        // Quadruple
         addQuad("=", rhs, NULL, node->value);
 
-        printf("%s = %s\n", node->value, rhs);
         free(rhs);
-        return strdup(node->value);
+        return NULL;
     }
 
-    // Recurse into other children (statement_list, etc.)
-    for (int i = 0; i < node->childCount; i++)
+    /* ---------- IF / IF-ELSE ---------- */
+    if (!strcmp(node->kind, "if_statement")) {
+        char* Ltrue = newLabel();
+        char* Lfalse = newLabel();
+        char* Lend = newLabel();
+
+        ASTNode_n* cond = node->children[0];
+        char* left = generate3AC(cond->children[0], currentScope);
+        char* right = generate3AC(cond->children[1], currentScope);
+
+        // Normal 3AC
+        printf("if %s %s %s goto %s\n", left, cond->value, right, Ltrue);
+        printf("goto %s\n", Lfalse);
+
+        // Quad
+        addQuad(cond->value, left, right, Ltrue);
+        addQuad("goto", NULL, NULL, Lfalse);
+
+        // Ltrue:
+        printf("%s:\n", Ltrue);
+        addQuad("label", NULL, NULL, Ltrue);
+        generate3AC(node->children[1], currentScope);
+        printf("goto %s\n", Lend);
+        addQuad("goto", NULL, NULL, Lend);
+
+        // Lfalse:
+        printf("%s:\n", Lfalse);
+        addQuad("label", NULL, NULL, Lfalse);
+        if (node->childCount == 3) {
+            generate3AC(node->children[2], currentScope);
+        }
+
+        // Lend:
+        printf("%s:\n", Lend);
+        addQuad("label", NULL, NULL, Lend);
+
+        free(left);
+        free(right);
+        return NULL;
+    }
+
+    /* ---------- WHILE LOOP ---------- */
+    if (!strcmp(node->kind, "while_statement")) {
+        char* Lstart = newLabel();
+        char* Lbody = newLabel();
+        char* Lend = newLabel();
+
+        printf("%s:\n", Lstart);
+        addQuad("label", NULL, NULL, Lstart);
+
+        ASTNode_n* cond = node->children[0];
+        char* left = generate3AC(cond->children[0], currentScope);
+        char* right = generate3AC(cond->children[1], currentScope);
+
+        printf("if %s %s %s goto %s\n", left, cond->value, right, Lbody);
+        printf("goto %s\n", Lend);
+        addQuad(cond->value, left, right, Lbody);
+        addQuad("goto", NULL, NULL, Lend);
+
+        printf("%s:\n", Lbody);
+        addQuad("label", NULL, NULL, Lbody);
+        generate3AC(node->children[1], currentScope);
+
+        printf("goto %s\n", Lstart);
+        addQuad("goto", NULL, NULL, Lstart);
+
+        printf("%s:\n", Lend);
+        addQuad("label", NULL, NULL, Lend);
+
+        free(left);
+        free(right);
+        return NULL;
+    }
+
+    /* ---------- Statement list ---------- */
+    for (int i = 0; i < node->childCount; i++) {
         generate3AC(node->children[i], currentScope);
+    }
 
     return NULL;
 }
+
 
 
 

@@ -31,14 +31,25 @@ void addSymbol(char *name, char *type, char *scope) {
 
 
 void printSymbolTable() {
-    printf("\n--- Symbol Table ---\n");
-    printf("%-10s %-10s %-10s %-6s\n", "Name", "Type", "Scope", "Offset");
+    printf("\n==================== SYMBOL TABLE ====================\n");
+    printf("+------------+------------+------------+----------+\n");
+    printf("| %-10s | %-10s | %-10s | %-8s |\n",
+           "Name", "Type", "Scope", "Offset");
+    printf("+------------+------------+------------+----------+\n");
+
     Symbol *curr = symbolTable->head;
     while (curr) {
-        printf("%-10s %-10s %-10s %-6d\n", curr->name, curr->type, curr->scope, curr->offset);
+        printf("| %-10s | %-10s | %-10s | %-8d |\n",
+               curr->name,
+               curr->type,
+               curr->scope,
+               curr->offset);
         curr = curr->next;
     }
+
+    printf("+------------+------------+------------+----------+\n");
 }
+
 
 void freeSymbolTable() {
     Symbol *curr = symbolTable->head;

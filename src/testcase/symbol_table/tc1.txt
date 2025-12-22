@@ -1,0 +1,7 @@
+// global scope tests
+
+// Single class insertion
+
+class Car {
+};
+

@@ -1,0 +1,17 @@
+// Attribute insertion
+
+// Attribute insertion to symbol table from functions
+
+func maxOfTwo(a : integer, b : integer) => integer {
+    local result : integer;    // store the bigger number
+
+    if (a > b) then {          // if a is bigger
+        result := a;
+    } else {                   // else b is bigger
+        result := b;
+    };
+
+    return(result);            // return the bigger value
+}
+
+

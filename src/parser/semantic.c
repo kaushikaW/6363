@@ -117,76 +117,100 @@ void checkAssignments(ASTNode *node, SymbolTable *currentTable) {
 void checkReturnTypes(ASTNode *node, SymbolTable *funcTable, const char *expectedType) {
     if (!node) return;
 
-    // Handle return statements
     if (strcmp(node->kind, "return") == 0) {
         ASTNode *expr = findChild(node, "expr");
-        const char *actualType = expr ? getExprType(expr, funcTable) : NULL;
 
         if (strcmp(expectedType, "void") == 0) {
-            // Void function should NOT return a value
-            if (actualType) {
-                addSemanticError(node->line, node->column, "Warning",
-                                 "Void function '%s' should not return a value",
-                                 funcTable->scopeName);
+            // void function returning a value
+            if (expr != NULL) {
+                addSemanticError(
+                    node->line,
+                    node->column,
+                    "Return Type Error",
+                    "Void function '%s' cannot return a value",
+                    funcTable->scopeName
+                );
             }
         } else {
-            // Non-void function must return the expected type
-            if (!actualType) {
-                addSemanticError(node->line, node->column, "Return Type Error",
-                                 "Function '%s' must return a value of type '%s'",
-                                 funcTable->scopeName, expectedType);
-            } else if (strcmp(actualType, expectedType) != 0) {
-                addSemanticError(node->line, node->column, "Return Type Error",
-                                 "Return type mismatch in function '%s'. Expected '%s' but got '%s'",
-                                 funcTable->scopeName, expectedType, actualType);
+            // Non-void function
+            if (expr == NULL) {
+                addSemanticError(
+                    node->line,
+                    node->column,
+                    "Return Type Error",
+                    "Function '%s' must return a value of type '%s'",
+                    funcTable->scopeName,
+                    expectedType
+                );
+            } else {
+                const char *actualType = getExprType(expr, funcTable);
+                if (!actualType || strcmp(actualType, expectedType) != 0) {
+                    addSemanticError(
+                        node->line,
+                        node->column,
+                        "Return Type Error",
+                        "Return type mismatch in function '%s'. Expected '%s' but got '%s'",
+                        funcTable->scopeName,
+                        expectedType,
+                        actualType ? actualType : "unknown"
+                    );
+                }
             }
         }
         return;
     }
 
-    // Recurse for all children
     for (int i = 0; i < node->childCount; i++) {
         checkReturnTypes(node->children[i], funcTable, expectedType);
     }
 }
 
+
 // ---------------- Expression Type Inference ----------------
 const char* getExprType(ASTNode *expr, SymbolTable *currentTable) {
-    if (!expr || expr->childCount == 0) return NULL;
+    if (!expr) return NULL;
 
-    ASTNode *first = expr->children[0];
+    // If it's a factor, check if it's literal or identifier
+    if (strcmp(expr->kind, "factor") == 0) {
+        if (expr->value) {
+            // Literal integer
+            int isInt = 1, i = 0;
+            if (expr->value[0] == '-' || expr->value[0] == '+') i = 1;
+            for (; expr->value[i]; i++) {
+                if (expr->value[i] < '0' || expr->value[i] > '9') { isInt = 0; break; }
+            }
+            if (isInt) return "integer";
 
-    // Factor (literal)
-    if (strcmp(first->kind, "factor") == 0) {
-        const char *val = first->value;
-        if (!val) return NULL;
-
-        // Integer check
-        int isInt = 1, i = 0;
-        if (val[0] == '-' || val[0] == '+') i = 1;
-        for (; val[i] != '\0'; i++) {
-            if (val[i] < '0' || val[i] > '9') { isInt = 0; break; }
+            // Literal float
+            int dotCount = 0;
+            for (i = 0; expr->value[i]; i++) {
+                if (expr->value[i] == '.') dotCount++;
+                else if (expr->value[i] < '0' || expr->value[i] > '9') { dotCount = -1; break; }
+            }
+            if (dotCount == 1) return "float";
         }
-        if (isInt) return "integer";
 
-        // Float check
-        int dotCount = 0;
-        for (i = 0; val[i] != '\0'; i++) {
-            if (val[i] == '.') dotCount++;
-            else if (val[i] < '0' || val[i] > '9') { dotCount = -1; break; }
+        // Factor may contain an identifier as a child
+        for (int i = 0; i < expr->childCount; i++) {
+            const char *childType = getExprType(expr->children[i], currentTable);
+            if (childType) return childType;
         }
-        if (dotCount == 1) return "float";
-
         return NULL;
     }
 
     // Identifier / variable
-    if (strcmp(first->kind, "idOrSelf") == 0) {
-        Symbol *sym = lookupSymbol(currentTable, first->value, NULL);
+    if (strcmp(expr->kind, "idOrSelf") == 0) {
+        Symbol *sym = lookupSymbol(currentTable, expr->value, NULL);
         if (sym) return sym->type;
         return NULL;
     }
 
-    // Recursively check children
-    return getExprType(first, currentTable);
+    // Recursively check all children
+    for (int i = 0; i < expr->childCount; i++) {
+        const char *childType = getExprType(expr->children[i], currentTable);
+        if (childType) return childType;
+    }
+
+    return NULL;
 }
+

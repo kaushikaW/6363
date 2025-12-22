@@ -1,0 +1,5 @@
+// declaration of Class before Implementation
+
+implement Car {
+
+}

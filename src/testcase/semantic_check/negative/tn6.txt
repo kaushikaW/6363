@@ -1,0 +1,8 @@
+// Invalid expression type
+
+func testfuc() => float {
+     local x: integer;
+     local y: float;
+
+     x := y + 2;
+}

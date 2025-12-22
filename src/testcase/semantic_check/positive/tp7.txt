@@ -1,0 +1,23 @@
+// correct return type
+
+func testfuc1() => integer {
+     local x: integer;
+     x:= 5;
+     return(x);
+}
+
+func testfuc2() => float {
+     local x: float;
+     x:= 5.5;
+     return(x + 2.5);
+}
+
+func testfuc3() => integer {
+     local x: integer;
+     local y: integer;
+     return(x + y);
+}
+
+func testfuc3() => integer {
+     return(2);
+}

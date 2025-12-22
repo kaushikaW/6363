@@ -1,0 +1,5 @@
+// variable used without declaration
+
+func main() => float {
+     x := 10;
+}

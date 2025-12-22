@@ -1,0 +1,8 @@
+// Nested Scope Creation
+
+// Class creates child symbol table
+
+class Car {
+};
+
+

@@ -42,7 +42,7 @@ void match_m(const char *expectedType);
 void syntax_error_m(const char *expected);
 
 void foo();
-
+char* newLabel();
 //3AC code
 void addQuad(char *op, char *arg1, char *arg2, char *result);
 

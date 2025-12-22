@@ -16,7 +16,6 @@
 
 #include "semantic_error.h"
 
-#include "helperparser.h"
 
 
 
@@ -1360,7 +1359,6 @@ int main() {
   // Create global table and build nested symbol tables
   SymbolTable * globalTable = createSymbolTable("GLOBAL");
   buildSymbolTable(root, globalTable, "GLOBAL", NULL);
-  assignOffsets(globalTable);
 
 
   printSymbolTable(globalTable);

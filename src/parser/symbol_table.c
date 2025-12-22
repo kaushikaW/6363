@@ -91,7 +91,7 @@ void printSymbolTable(SymbolTable *table) {
                s->line,
                s->column,
                (s->kind == SYM_FUNCTION) ? (s->isDeclared ? "Yes" : "No") : "-",
-               s->offset);
+               s->offset = 0);
     }
 
     for (int i = 0; i < table->childCount; i++) {
@@ -393,23 +393,5 @@ void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scop
 }
 
 
-void assignOffsets(SymbolTable *funcTable) {
-    if (!funcTable) return;
 
-    int currentOffset = 0; // start at 0 for first local variable
-
-    // iterate over symbols in the table
-    for (Symbol *s = funcTable->head; s; s = s->next) {
-        if (s->kind == SYM_VARIABLE) {
-            int size = 4; //4 bytes for integer
-            s->offset = currentOffset;
-            currentOffset -= size; // stack grows downward
-        }
-    }
-
-    // Recursively assign offsets to nested tables (for functions inside classes)
-    for (int i = 0; i < funcTable->childCount; i++) {
-        assignOffsets(funcTable->children[i]);
-    }
-}
 

@@ -1,0 +1,9 @@
+// global scope tests
+
+// Multiple class insertion
+
+class Car {
+};
+
+class Van {
+};

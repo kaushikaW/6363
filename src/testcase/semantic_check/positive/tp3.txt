@@ -1,0 +1,10 @@
+// same variable name in different scopes
+
+func main() => float {
+     local x: integer;
+}
+
+
+func testfuc() => float {
+     local x: integer;
+}
