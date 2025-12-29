@@ -1,0 +1,10 @@
+// WHILE LOOP
+
+func main() => void {
+    local i : integer;
+    i := 0;
+
+    while (i < 5) {
+        i := i + 1;
+    };
+}

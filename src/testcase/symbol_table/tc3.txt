@@ -1,8 +1,9 @@
-// Nested Scope Creation
+// Attribute insertion
 
-// Class creates child symbol table
+// Attribute insertion to symbol table from class
 
 class Car {
+ public attribute rank : integer;
 };
 
 

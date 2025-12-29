@@ -5,23 +5,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "semantic_error.h"
+#include "../semantic_error/semantic_error.h"
 
 // ---------------- Symbol Table Basic Functions ----------------
 
 SymbolTable* createSymbolTable(const char *scopeName) {
+
     SymbolTable *table = malloc(sizeof(SymbolTable));
+
     table->head = NULL;
     table->scopeName = scopeName ? strdup(scopeName) : strdup("GLOBAL");
     table->children = NULL;
     table->childCount = 0;
+
     return table;
 }
 
 void insertSymbol(SymbolTable *table, const char *name, SymbolKind kind,
                   const char *type, const char *scope, const char *visibility,
                   int line, int column, int isDeclared) {
+
+    // cheking duplicates
     Symbol *existing = lookupSymbol(table, name, scope);
+
     if (existing) {
         addSemanticError(line, column, "Scope Error",
                          "Duplicate declaration of '%s' in scope '%s'", name, scope);
@@ -29,6 +35,7 @@ void insertSymbol(SymbolTable *table, const char *name, SymbolKind kind,
     }
 
     Symbol *sym = malloc(sizeof(Symbol));
+
     sym->name = strdup(name);
     sym->kind = kind;
     sym->type = type ? strdup(type) : NULL;
@@ -38,13 +45,14 @@ void insertSymbol(SymbolTable *table, const char *name, SymbolKind kind,
     sym->column = column;
     sym->isDeclared = isDeclared;
     sym->params = NULL;
-    sym->next = NULL;  // Important: tail insertion
+    sym->next = NULL;  //  tail insertion
 
     // Insert at tail
     if (!table->head) {
         table->head = sym;
     } else {
         Symbol *cur = table->head;
+
         while (cur->next) {
             cur = cur->next;
         }
@@ -55,6 +63,7 @@ void insertSymbol(SymbolTable *table, const char *name, SymbolKind kind,
 
 void addNestedTable(SymbolTable *parent, SymbolTable *child) {
     parent->children = realloc(parent->children, sizeof(SymbolTable*) * (parent->childCount + 1));
+
     parent->children[parent->childCount++] = child;
 }
 
@@ -131,7 +140,7 @@ void freeSymbolTable(SymbolTable *table) {
     free(table);
 }
 
-// ---------------- AST Helpers ----------------
+// get the node with node kind
 
 ASTNode* findChild(ASTNode *node, const char *kind) {
     if (!node) return NULL;
@@ -148,6 +157,7 @@ void handleAttributeDecl(ASTNode *node, SymbolTable *currentTable, const char *s
     ASTNode *varDecl = findChild(node, "varDecl");
     if (!varDecl || varDecl->childCount < 2) return;
 
+
     const char *varName = varDecl->children[0]->value;
     const char *varType = varDecl->children[1]->value;
 
@@ -158,12 +168,14 @@ void handleLocalVarDecl(ASTNode *localVarNode, SymbolTable *funcTable, const cha
     ASTNode *varDecl = findChild(localVarNode, "varDecl");
     if (!varDecl || varDecl->childCount < 2) return;
 
+
     const char *varName = varDecl->children[0]->value;
     const char *varType = varDecl->children[1]->value;
 
     insertSymbol(funcTable, varName, SYM_VARIABLE, varType, scope, NULL, localVarNode->line, localVarNode->column, 0);
 }
 
+// collect local variable declarations
 void collectLocals(ASTNode *node, SymbolTable *funcTable, const char *funcName) {
     if (!node) return;
 
@@ -274,6 +286,7 @@ void handleFuncDecl(ASTNode *node, SymbolTable *currentTable,
 
     // Collect local variables from body
     ASTNode *funcBody = findChild(node, "funcBody");
+
     if (funcBody) {
         for (int i = 0; i < funcBody->childCount; i++)
             collectLocals(funcBody->children[i], funcTable, funcName);
@@ -287,10 +300,11 @@ void handleClassDecl(ASTNode *node, SymbolTable *currentTable) {
     if (!classIdNode) return;
 
     const char *className = classIdNode->value;
-    insertSymbol(currentTable, className, SYM_CLASS, NULL, NULL, "public",
+    insertSymbol(currentTable, className, SYM_CLASS, "class-type", "Global", "public",
                  classIdNode->line, classIdNode->column, 0);
 
     SymbolTable *classTable = createSymbolTable(className);
+
     addNestedTable(currentTable, classTable);
 
     // Default visibility for class members
@@ -392,6 +406,19 @@ void buildSymbolTable(ASTNode *root, SymbolTable *currentTable, const char *scop
         buildSymbolTable(root->children[i], currentTable, scope, visibility);
 }
 
+
+void calculateOffsets(SymbolTable *symbolTable) {
+    if (!symbolTable) return;
+
+    Symbol *curr = symbolTable->head;
+    int offset = -8;  // start from -8 for the first local/temporary
+
+    while (curr) {
+        curr->offset = offset;
+        offset -= 8;
+        curr = curr->next;
+    }
+}
 
 
 

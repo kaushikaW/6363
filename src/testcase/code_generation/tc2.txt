@@ -1,0 +1,8 @@
+// Arithmetic Expression
+
+func main() => void {
+    local a : integer;
+    local b : integer;
+    b := 2;
+    a := 5 + b * 3;
+}

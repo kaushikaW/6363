@@ -2,8 +2,8 @@
 #define SEMANTIC_H
 
 #include <stdio.h>
-#include "AST/ast.h"
-#include "symbol_table.h"
+#include "../parser/ast.h"
+#include "../symbol_table/symbol_table.h"
 
 // Entry point for semantic analysis. errorLog may be NULL to skip file logging.
 void analyzeSemantics(ASTNode *root, SymbolTable *globalTable);

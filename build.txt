@@ -1,0 +1,74 @@
+cd/src/lexer
+flex -o src/lexer/lexer.l
+flex -o lexer.l
+
+gcc -o parser src/main.c src/parser/parser.c src/lexer/lex.yy.c src/symbol_table/symbol_table.c src/semantics/semantic.c  src/semantic_error/semantic_error.c
+
+gcc -o codegen src/codeGen/helpers/helperparser.c src/codeGen/helpers/symbol_table.c src/lexer/lex.yy.c src/codeGen/codegen.c
+
+
+Test case ----------- parser < src/testcase/test.txt
+
+
+///////////////////
+Semantic Analysis
+///////////////////
+
+*positive test
+
+1.variable declared before use
+parser < src/testcase/semantic_check/positive/tp1.txt
+
+2.declaration of Class
+parser < src/testcase/semantic_check/positive/tp2.txt
+
+3.same variable name in different scopes
+parser < src/testcase/semantic_check/positive/tp3.txt
+
+4.normal class declaration
+parser < src/testcase/semantic_check/positive/tp4.txt
+
+5.correct type  assignment
+parser < src/testcase/semantic_check/positive/tp5.txt
+
+6.correct expression type
+parser < src/testcase/semantic_check/positive/tp6.txt
+
+7.correct return type
+parser < src/testcase/semantic_check/positive/tp7.txt
+
+///////////////////
+Symbol Table
+///////////////////
+
+1.Single class insertion
+
+2.Multiple class insertion
+
+3.Attribute insertion to symbol table from class
+
+4.Attribute insertion to symbol table from functions
+
+5.Attribute insertion to symbol table from class and correct track of visibility
+
+////////////////////////////
+Intermediate Code Generation
+////////////////////////////
+
+1.Simple Assignment
+codegen < src/testcase/code_generation/tc1.txt
+
+2.Arithmetic Expression
+codegen < src/testcase/code_generation/tc2.txt
+
+3.Write Statement (printf)
+codegen < src/testcase/code_generation/tc3.txt
+
+4.IF Statement
+codegen < src/testcase/code_generation/tc4.txt
+
+5.IF ELSE Statement
+codegen < src/testcase/code_generation/tc5.txt
+
+5.WHILE LOOP
+codegen < src/testcase/code_generation/tc6.txt

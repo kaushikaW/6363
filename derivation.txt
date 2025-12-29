@@ -1,2 +1,1 @@
-prog -> classOrImplOrFuncList
-classOrImplOrFuncList -> ε
+program -> FUNC IDENTIFIER LPAREN RPAREN ARROW VOID LBRACE statement_list RBRACE

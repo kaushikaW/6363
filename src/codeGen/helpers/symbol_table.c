@@ -72,13 +72,12 @@ void calculateOffsets() {
 
     while (curr) {
         curr->offset = offset;
-        offset -= 8; // next variable gets next 8-byte slot
+        offset -= 8;
         curr = curr->next;
     }
 }
 
 // Returns the total number of bytes needed to store all local variables
-// by finding the largest negative offset in the symbol table.
 int totalLocalBytes() {
     Symbol *curr = symbolTable->head;
     int maxBytes = 0;

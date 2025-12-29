@@ -4,6 +4,15 @@
 #include <stdarg.h>
 #include "semantic_error.h"
 
+/* ---------- ANSI Colors ---------- */
+#define COLOR_RESET   "\x1b[0m"
+#define COLOR_RED     "\x1b[31m"
+#define COLOR_GREEN   "\x1b[32m"
+#define COLOR_YELLOW  "\x1b[33m"
+#define COLOR_BLUE    "\x1b[34m"
+#define COLOR_BOLD    "\x1b[1m"
+/* -------------------------------- */
+
 SemanticError errorList[MAX_ERRORS];
 int errorCount = 0;
 
@@ -36,19 +45,29 @@ static int compareErrors(const void* a, const void* b) {
 // Print all semantic errors
 void printSemanticErrors() {
     if (errorCount == 0) {
-        printf("Semantic analysis completed successfully.\n");
+        printf(COLOR_GREEN COLOR_BOLD
+               "Semantic analysis completed successfully.\n"
+               COLOR_RESET);
         return;
     }
 
     // Sort errors by line and column
     qsort(errorList, errorCount, sizeof(SemanticError), compareErrors);
 
+    printf(COLOR_RED COLOR_BOLD
+           "\nSemantic Errors Found (%d)\n"
+           COLOR_RESET, errorCount);
+
     // Print all errors
     for (int i = 0; i < errorCount; i++) {
-        printf("Line %d, Col %d: [%s] %s\n",
-               errorList[i].line,
-               errorList[i].col,
-               errorList[i].type,
-               errorList[i].message);
+        printf(
+            COLOR_BLUE "Line %d, Col %d: " COLOR_RESET
+            COLOR_YELLOW "[%s] " COLOR_RESET
+            COLOR_RED "%s\n" COLOR_RESET,
+            errorList[i].line,
+            errorList[i].col,
+            errorList[i].type,
+            errorList[i].message
+        );
     }
 }

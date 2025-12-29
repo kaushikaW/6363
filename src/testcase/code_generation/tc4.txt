@@ -1,0 +1,12 @@
+// IF Statement
+
+func main() => void {
+    local a : integer;
+    local b : integer;
+
+    a := 10;
+
+    if (a > 5) then {
+        b := 1;
+    };
+}

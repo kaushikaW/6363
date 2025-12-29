@@ -1,0 +1,6 @@
+// Simple Assignment
+
+func main() => void {
+    local a : integer;
+    a := 5 + 2;
+}

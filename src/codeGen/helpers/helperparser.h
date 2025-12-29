@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include "../../lexer/token.h"
-#include "../AST/ast.h"
+#include "../../parser/ast.h"
 
 
 extern Token *lookahead;

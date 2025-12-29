@@ -4,7 +4,7 @@
 #include "../../lexer/token.h"
 #include "helperparser.h"
 #include "symbol_table.h"
-#include "codegen.h"
+#include "../codegen.h"
 
 extern Token * yylex();
 
@@ -216,16 +216,28 @@ ASTNode_n* if_statement_n() {
 
 
 
-// var_decl ::= local IDENT : integer
+// var_decl ::= local IDENT : (integer | float)
 ASTNode_n* var_decl_n() {
     ASTNode_n* node = createASTNode_n("var_decl", NULL, lookahead->line, lookahead->column);
+
     match_n("LOCAL");
-    node->value = strdup(lookahead->lexeme);
+    node->value = strdup(lookahead->lexeme); // variable name
     match_n("IDENTIFIER");
     match_n("COLON");
-    match_n("INTEGER_TYPE");
+
+    if (strcmp(lookahead->tokenType, "INTEGER_TYPE") == 0) {
+        node->type = NODE_DECL;
+        match_n("INTEGER_TYPE");
+    } else if (strcmp(lookahead->tokenType, "FLOAT_TYPE") == 0) {
+        node->type = NODE_DECL;
+        match_n("FLOAT_TYPE");
+    } else {
+        syntax_error_n("integer | float");
+    }
+
     return node;
 }
+
 
 // assignment ::= IDENT := expression
 ASTNode_n* assignment_n() {
@@ -326,6 +338,9 @@ ASTNode_n* factor_n() {
         match_n("INTEGER");
         return node;
     }
+
+
+
 
     if (strcmp(lookahead->tokenType, "IDENTIFIER") == 0) {
         ASTNode_n* node = createASTNode_n("IDENTIFIER",
@@ -575,8 +590,7 @@ int main() {
      // Generate symbol table (traverse AST first)
     traverseAST(root, "main");
 
-    // Print symbol table
-    printSymbolTable();
+
 
     // Generate 3AC
     printf("\n--- 3AC ---\n");

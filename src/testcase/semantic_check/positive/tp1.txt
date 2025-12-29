@@ -1,9 +1,13 @@
 // variable declared before use
 
-func main() => float {
-     local x: integer;
+func main() => integer {
      local y: integer;
+     local z: float;
 
-     x := 10;
+
+     y := 2;
+
+     return (2);
+
 
 }

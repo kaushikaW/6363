@@ -1,0 +1,9 @@
+// Write Statement (printf)
+
+func main() => void {
+    local x : integer;
+    x := 42;
+    write(x);
+}
+
+tc3.txt

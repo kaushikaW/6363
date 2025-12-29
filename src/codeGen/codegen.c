@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "symbol_table.h"
-#include "helperparser.h"
+#include "helpers/symbol_table.h"
+#include "helpers/helperparser.h"
 #include <stdarg.h>
 
 extern SymbolTable *symbolTable;   // global symbol table
@@ -64,7 +64,7 @@ int getOffset(char *name, char *scope) {
 }
 
 //-----------------------------------------------------
-// Generate assembly for expressions (optimized)
+// Generate assembly for expressions
 //-----------------------------------------------------
 void generateASMExpr(ASTNode_n *node, char *scope) {
     if (!node) return;
@@ -80,13 +80,18 @@ void generateASMExpr(ASTNode_n *node, char *scope) {
         return;
     }
 
+    // Handle Binary Operators (+, -, , /)
+
     if (!strcmp(node->kind, "PLUS") ||
         !strcmp(node->kind, "MINUS") ||
         !strcmp(node->kind, "TIMES") ||
         !strcmp(node->kind, "DIVIDE")) {
 
+        // right operand
         generateASMExpr(node->children[0], scope);
         emit("    pushq %%rax\n");
+
+        // left  operand
         generateASMExpr(node->children[1], scope);
         emit("    movq %%rax, %%rbx\n");
         emit("    popq %%rax\n");
@@ -105,7 +110,7 @@ void generateASMExpr(ASTNode_n *node, char *scope) {
 }
 
 //-----------------------------------------------------
-// Generate assembly for statements (optimized)
+// Generate assembly for statements
 //-----------------------------------------------------
 void generateASMStmt(ASTNode_n *node, char *scope) {
     if (!node) return;
@@ -198,7 +203,7 @@ void generateASMStmt(ASTNode_n *node, char *scope) {
 }
 
 //-----------------------------------------------------
-// Main ASM generator (console output ONLY)
+// Main ASM generator
 //-----------------------------------------------------
 void generateASM(ASTNode_n *root) {
     emit("\n# ===== Generated x86-64 Assembly =====\n\n");

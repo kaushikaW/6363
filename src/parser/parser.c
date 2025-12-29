@@ -8,13 +8,13 @@
 
 #include "parser.h"
 
-#include "AST/ast.h"
+#include "../parser/ast.h"
 
-#include "symbol_table.h"
+#include "../symbol_table/symbol_table.h"
 
-#include "semantic.h"
+#include "../semantics/semantic.h"
 
-#include "semantic_error.h"
+#include "../semantic_error/semantic_error.h"
 
 
 
@@ -867,11 +867,7 @@ ASTNode * idOrSelfStatement() {
   return parent_idOrSelfStatement;
 }
 
-/*
-idOrSelfTailWithAssignOrCall → assignOp expr
-                             | '(' aParams ')' idNestTail
-                             | indiceList idNestTail
- */
+
 
 ASTNode * idOrSelfTailWithAssignOrCall() {
   ASTNode * parent_idOrSelfTailWithAssignOrCall = createASTNode("idOrSelfTailWithAssignOrCall", NULL, lookahead -> line, lookahead -> column);
@@ -1091,45 +1087,102 @@ ASTNode * term() {
 }
 
 // factor -> idOrSelf idOrSelfTail | 'intLit' | 'floatLit' | '(' arithExpr ')' | 'not' factor | sign factor
-ASTNode * factor() {
-  ASTNode * parent_factor = createASTNode("factor", NULL, lookahead -> line, lookahead -> column);
+ASTNode *factor() {
+    ASTNode *parent_factor = NULL;
 
-  if (lookahead && (strcmp(lookahead -> tokenType, "IDENTIFIER") == 0 || strcmp(lookahead -> tokenType, "SELF") == 0)) {
-    fprintf(derivation, "factor -> idOrSelf idOrSelfTail\n");
-    ASTNode * child_idOrSelf = idOrSelf();
-    if (child_idOrSelf) {
-      addChild(parent_factor, child_idOrSelf);
+    if (lookahead && (strcmp(lookahead->tokenType, "IDENTIFIER") == 0 || strcmp(lookahead->tokenType, "SELF") == 0)) {
+        // Identifier / self
+        parent_factor = createASTNode("factor", NULL, lookahead->line, lookahead->column);
+        fprintf(derivation, "factor -> idOrSelf idOrSelfTail\n");
+        ASTNode *child_idOrSelf = idOrSelf();
+        if (child_idOrSelf) {
+            addChild(parent_factor, child_idOrSelf);
+        }
+        idOrSelfTail();
+
+    } else if (lookahead && strcmp(lookahead->tokenType, "INTEGER") == 0) {
+        // Integer literal
+        parent_factor = createASTNode("integerFactor", lookahead->lexeme, lookahead->line, lookahead->column);
+        fprintf(derivation, "factor -> 'intLit'\n");
+        match("INTEGER");
+
+    } else if (lookahead && strcmp(lookahead->tokenType, "FLOAT") == 0) {
+        // Float literal
+        parent_factor = createASTNode("floatFactor", lookahead->lexeme, lookahead->line, lookahead->column);
+        fprintf(derivation, "factor -> 'floatLit'\n");
+        match("FLOAT");
+
+    } else if (lookahead && strcmp(lookahead->tokenType, "LPAREN") == 0) {
+        // Parenthesized expression
+        parent_factor = createASTNode("factor", NULL, lookahead->line, lookahead->column);
+        fprintf(derivation, "factor -> '(' arithExpr ')'\n");
+        match("LPAREN");
+        ASTNode *exprNode = arithExpr();
+        if (exprNode) addChild(parent_factor, exprNode);
+        match("RPAREN");
+
+    } else if (lookahead && strcmp(lookahead->tokenType, "NOT") == 0) {
+        // NOT factor
+        parent_factor = createASTNode("factor", NULL, lookahead->line, lookahead->column);
+        fprintf(derivation, "factor -> 'not' factor\n");
+        match("NOT");
+        ASTNode *childFactor = factor();
+        if (childFactor) addChild(parent_factor, childFactor);
+
+    } else if (lookahead && (strcmp(lookahead->tokenType, "PLUS") == 0 || strcmp(lookahead->tokenType, "MINUS") == 0)) {
+        // Unary sign
+        parent_factor = createASTNode("factor", NULL, lookahead->line, lookahead->column);
+        fprintf(derivation, "factor -> sign factor\n");
+        match(lookahead->tokenType);
+        ASTNode *childFactor = factor();
+        if (childFactor) addChild(parent_factor, childFactor);
+
+    } else {
+        syntax_error("factor (idOrSelf, intLit, floatLit, or '(' arithExpr ')')");
     }
 
-    idOrSelfTail();
-
-  } else if (lookahead && strcmp(lookahead -> tokenType, "INTEGER") == 0) {
-    fprintf(derivation, "factor -> 'intLit'\n");
-    parent_factor -> value = strdup(lookahead -> lexeme);
-    match("INTEGER");
-  } else if (lookahead && strcmp(lookahead -> tokenType, "FLOAT") == 0) {
-    fprintf(derivation, "factor -> 'floatLit'\n");
-    parent_factor -> value = strdup(lookahead -> lexeme);
-    match("FLOAT");
-  } else if (lookahead && strcmp(lookahead -> tokenType, "LPAREN") == 0) {
-    fprintf(derivation, "factor -> '(' arithExpr ')'\n");
-    match("LPAREN");
-    arithExpr();
-    match("RPAREN");
-  } else if (lookahead && strcmp(lookahead -> tokenType, "NOT") == 0) {
-    fprintf(derivation, "factor -> 'not' factor\n");
-    match("NOT");
-    factor();
-  } else if (lookahead && (strcmp(lookahead -> tokenType, "PLUS") == 0 || strcmp(lookahead -> tokenType, "MINUS") == 0)) {
-    fprintf(derivation, "factor -> sign factor\n");
-    match(lookahead -> tokenType);
-    factor();
-  } else {
-    syntax_error("factor (idOrSelf, intLit, floatLit, or '(' arithExpr ')')");
-  }
-
-  return parent_factor;
+    return parent_factor;
 }
+
+//ASTNode * factor() {
+//  ASTNode * parent_factor = createASTNode("factor", NULL, lookahead -> line, lookahead -> column);
+//
+//  if (lookahead && (strcmp(lookahead -> tokenType, "IDENTIFIER") == 0 || strcmp(lookahead -> tokenType, "SELF") == 0)) {
+//    fprintf(derivation, "factor -> idOrSelf idOrSelfTail\n");
+//    ASTNode * child_idOrSelf = idOrSelf();
+//    if (child_idOrSelf) {
+//      addChild(parent_factor, child_idOrSelf);
+//    }
+//
+//    idOrSelfTail();
+//
+//  } else if (lookahead && strcmp(lookahead -> tokenType, "INTEGER") == 0) {
+//    fprintf(derivation, "factor -> 'intLit'\n");
+//    parent_factor -> value = strdup(lookahead -> lexeme);
+//    match("INTEGER");
+//  } else if (lookahead && strcmp(lookahead -> tokenType, "FLOAT") == 0) {
+//    fprintf(derivation, "factor -> 'floatLit'\n");
+//    parent_factor -> value = strdup(lookahead -> lexeme);
+//    match("FLOAT");
+//  } else if (lookahead && strcmp(lookahead -> tokenType, "LPAREN") == 0) {
+//    fprintf(derivation, "factor -> '(' arithExpr ')'\n");
+//    match("LPAREN");
+//    arithExpr();
+//    match("RPAREN");
+//  } else if (lookahead && strcmp(lookahead -> tokenType, "NOT") == 0) {
+//    fprintf(derivation, "factor -> 'not' factor\n");
+//    match("NOT");
+//    factor();
+//  } else if (lookahead && (strcmp(lookahead -> tokenType, "PLUS") == 0 || strcmp(lookahead -> tokenType, "MINUS") == 0)) {
+//    fprintf(derivation, "factor -> sign factor\n");
+//    match(lookahead -> tokenType);
+//    factor();
+//  } else {
+//    syntax_error("factor (idOrSelf, intLit, floatLit, or '(' arithExpr ')')");
+//  }
+//
+//  return parent_factor;
+//}
 
 // idOrSelfTail -> '(' aParams ')' idNestTail | indiceList idNestTail | ε
 void idOrSelfTail() {
@@ -1331,56 +1384,5 @@ void statBlock() {
     fprintf(derivation, "statBlock -> ε\n");
   }
 }
-int main() {
 
 
-  // Open derivation file
-  derivation = fopen("derivation.txt", "w");
-  if (!derivation) {
-    perror("derivation.txt");
-    return 1;
-  }
-
-  nextToken(); // read first token
-  ASTNode * root = prog();
-
-  // Check for extra tokens
-  if (lookahead != NULL) {
-    fprintf(stderr, "Syntax error: extra tokens at end starting at '%s' (line %d, col %d)\n",
-      lookahead -> lexeme, lookahead -> line, lookahead -> column);
-    fclose(derivation);
-    return 1;
-  }
-
-  printf("Parsing successful! Derivation written to derivation.txt\n");
-  printf("\nAbstract Syntax Tree:\n");
-  printAST(root, 0);
-
-  // Create global table and build nested symbol tables
-  SymbolTable * globalTable = createSymbolTable("GLOBAL");
-  buildSymbolTable(root, globalTable, "GLOBAL", NULL);
-
-
-  printSymbolTable(globalTable);
-
-  // Open semantic error log file
-  FILE * semanticErrorLog = fopen("semantic_errors.txt", "w");
-  if (!semanticErrorLog) {
-    perror("semantic_errors.txt");
-    freeSymbolTable(globalTable);
-    fclose(derivation);
-    return 1;
-  }
-
-  // Semantic analysis with type checking and error reporting
-  analyzeSemantics(root, globalTable);
-
-  printSemanticErrors();
-
-
-  fclose(semanticErrorLog);
-  freeSymbolTable(globalTable);
-  fclose(derivation);
-
-  return 0;
-}

@@ -1,6 +1,6 @@
 #ifndef SYMBOL_TABLE_H
 #define SYMBOL_TABLE_H
-#include "AST/ast.h"
+#include "../parser/ast.h"
 
 typedef enum { SYM_CLASS, SYM_FUNCTION, SYM_ATTRIBUTE, SYM_VARIABLE } SymbolKind;
 

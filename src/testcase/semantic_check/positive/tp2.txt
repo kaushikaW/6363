@@ -1,3 +1,5 @@
+// declaration of Class
+
 
 class Car {
    public func printDetails() => integer;
